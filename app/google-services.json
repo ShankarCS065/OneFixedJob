@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "689536523043",
+    "firebase_url": "https://shoption-36edc-default-rtdb.firebaseio.com",
+    "project_id": "shoption-36edc",
+    "storage_bucket": "shoption-36edc.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:689536523043:android:4d80612495a6727ed0ca96",
+        "android_client_info": {
+          "package_name": "com.devlopershankar.onefixedjob"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7FY8kGquBdkOAQZjhgC4ZEMM-oUUB4sk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:689536523043:android:a102549f988eab8dd0ca96",
+        "android_client_info": {
+          "package_name": "com.krashkrosh748199.shoption"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC7FY8kGquBdkOAQZjhgC4ZEMM-oUUB4sk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
