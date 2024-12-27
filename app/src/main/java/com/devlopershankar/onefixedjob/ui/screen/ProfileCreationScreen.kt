@@ -35,6 +35,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.devlopershankar.onefixedjob.R
+import com.devlopershankar.onefixedjob.navigation.Screens
 import com.devlopershankar.onefixedjob.ui.viewmodel.UserProfileViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -66,29 +67,59 @@ fun ProfileCreationScreen(
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
 
-                // Handle other events if necessary
-                else -> Unit
+                is UserProfileViewModel.UiEvent.LogoutSuccess -> {
+                    // Handle logout success if needed
+                }
             }
         }
     }
 
     // States for input fields initialized with current ViewModel data
-    var fullName by remember { mutableStateOf(TextFieldValue(viewModel.fullName)) }
-    var email by remember { mutableStateOf(TextFieldValue(viewModel.email)) }
-    var phoneNumber by remember { mutableStateOf(TextFieldValue(viewModel.phoneNumber)) }
-    var dateOfBirth by remember { mutableStateOf(TextFieldValue(viewModel.dateOfBirth)) }
-    var gender by remember { mutableStateOf(TextFieldValue(viewModel.gender)) }
-    var address by remember { mutableStateOf(TextFieldValue(viewModel.address)) }
-    var state by remember { mutableStateOf(TextFieldValue(viewModel.state)) }
-    var pincode by remember { mutableStateOf(TextFieldValue(viewModel.pincode)) }
-    var district by remember { mutableStateOf(TextFieldValue(viewModel.district)) }
+    val userProfile by viewModel.userProfile.collectAsState()
 
-    var collegeName by remember { mutableStateOf(TextFieldValue(viewModel.collegeName)) }
-    var branch by remember { mutableStateOf(TextFieldValue(viewModel.branch)) }
-    var course by remember { mutableStateOf(TextFieldValue(viewModel.course)) }
-    var passOutYear by remember { mutableStateOf(TextFieldValue(viewModel.passOutYear)) }
+    // Initialize state variables and update them when userProfile changes
+    var isInitialized by remember { mutableStateOf(false) }
 
-    var resumeFilename by remember { mutableStateOf(TextFieldValue(viewModel.resumeFilename)) }
+    var fullName by remember { mutableStateOf(TextFieldValue(userProfile.fullName)) }
+    var email by remember { mutableStateOf(TextFieldValue(userProfile.email)) }
+    var phoneNumber by remember { mutableStateOf(TextFieldValue(userProfile.phoneNumber)) }
+    var dateOfBirth by remember { mutableStateOf(TextFieldValue(userProfile.dateOfBirth)) }
+    var gender by remember { mutableStateOf(TextFieldValue(userProfile.gender)) }
+    var address by remember { mutableStateOf(TextFieldValue(userProfile.address)) }
+    var state by remember { mutableStateOf(TextFieldValue(userProfile.state)) }
+    var pincode by remember { mutableStateOf(TextFieldValue(userProfile.pincode)) }
+    var district by remember { mutableStateOf(TextFieldValue(userProfile.district)) }
+
+    var collegeName by remember { mutableStateOf(TextFieldValue(userProfile.collegeName)) }
+    var branch by remember { mutableStateOf(TextFieldValue(userProfile.branch)) }
+    var course by remember { mutableStateOf(TextFieldValue(userProfile.course)) }
+    var passOutYear by remember { mutableStateOf(TextFieldValue(userProfile.passOutYear)) }
+
+    var resumeFilename by remember { mutableStateOf(TextFieldValue(userProfile.resumeFilename)) }
+
+    // Update state variables when userProfile changes (only once)
+    LaunchedEffect(userProfile) {
+        if (!isInitialized) {
+            fullName = TextFieldValue(userProfile.fullName)
+            email = TextFieldValue(userProfile.email)
+            phoneNumber = TextFieldValue(userProfile.phoneNumber)
+            dateOfBirth = TextFieldValue(userProfile.dateOfBirth)
+            gender = TextFieldValue(userProfile.gender)
+            address = TextFieldValue(userProfile.address)
+            state = TextFieldValue(userProfile.state)
+            pincode = TextFieldValue(userProfile.pincode)
+            district = TextFieldValue(userProfile.district)
+
+            collegeName = TextFieldValue(userProfile.collegeName)
+            branch = TextFieldValue(userProfile.branch)
+            course = TextFieldValue(userProfile.course)
+            passOutYear = TextFieldValue(userProfile.passOutYear)
+
+            resumeFilename = TextFieldValue(userProfile.resumeFilename)
+
+            isInitialized = true
+        }
+    }
 
     // Launcher for image selection
     val imageLauncher = rememberLauncherForActivityResult(
@@ -97,8 +128,7 @@ fun ProfileCreationScreen(
         uri?.let {
             // Upload the selected image via ViewModel
             viewModel.uploadProfileImage(
-                imageUri = it,
-                context = context
+                imageUri = it
             )
         }
     }
@@ -114,8 +144,7 @@ fun ProfileCreationScreen(
             // Upload the selected resume via ViewModel
             viewModel.uploadResume(
                 resumeUriLocal = it,
-                filename = filename,
-                context = context
+                filename = filename
             )
         }
     }
@@ -124,10 +153,10 @@ fun ProfileCreationScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     // Collect resumeUri state as State
-    val resumeUri by viewModel.resumeUri.collectAsState()
+    val resumeUri = userProfile.resumeUrl
 
     // Collect profileImageUri state as State
-    val profileImageUri by viewModel.profileImageUri.collectAsState()
+    val profileImageUri = userProfile.profileImageUrl
 
     // Loading Indicator
     if (isLoading) {
@@ -185,7 +214,7 @@ fun ProfileCreationScreen(
                     },
                 contentAlignment = Alignment.Center
             ) {
-                if (!profileImageUri.isNullOrEmpty()) {
+                if (profileImageUri.isNotEmpty()) {
                     AsyncImage(
                         model = Uri.parse(profileImageUri),
                         contentDescription = "Selected Profile Image",

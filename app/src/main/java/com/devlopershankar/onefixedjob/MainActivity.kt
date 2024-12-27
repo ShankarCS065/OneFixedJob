@@ -21,6 +21,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+
         setContent {
             OneFixedJobTheme { // Apply your custom theme
                 Surface(color = MaterialTheme.colorScheme.background) {
@@ -51,6 +52,12 @@ class MainActivity : ComponentActivity() {
                                     // Handle global error messages
                                     // Example using Toast:
                                     // Toast.makeText(this@MainActivity, event.message, Toast.LENGTH_SHORT).show()
+                                }
+                                is UserProfileViewModel.UiEvent.LogoutSuccess -> {
+                                    // Navigate to LoginScreen upon logout
+                                    navController.navigate(Screens.LoginScreen.route) {
+                                        popUpTo(navController.graph.startDestinationId) { inclusive = true }
+                                    }
                                 }
                                 // Handle other events if necessary
                                 else -> Unit

@@ -20,10 +20,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Upload
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Download
+import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -35,12 +35,11 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.devlopershankar.onefixedjob.R
+import com.devlopershankar.onefixedjob.navigation.Screens
 import com.devlopershankar.onefixedjob.ui.viewmodel.UserProfileViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -68,8 +67,9 @@ fun UserProfileScreen(
                 is UserProfileViewModel.UiEvent.ShowError -> {
                     Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
                 }
-                // Handle other events if necessary
-                else -> Unit
+                is UserProfileViewModel.UiEvent.LogoutSuccess -> {
+                    // Handle logout success if needed
+                }
             }
         }
     }
@@ -77,37 +77,17 @@ fun UserProfileScreen(
     // Collecting isLoading state
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Collecting profileImageUri and resumeUri
-    val profileImageUri by viewModel.profileImageUri.collectAsState()
-    val resumeUri by viewModel.resumeUri.collectAsState()
-
-    // States for input fields initialized with current ViewModel data
-    var fullName by remember { mutableStateOf(TextFieldValue(viewModel.fullName)) }
-    var email by remember { mutableStateOf(TextFieldValue(viewModel.email)) }
-    var phoneNumber by remember { mutableStateOf(TextFieldValue(viewModel.phoneNumber)) }
-    var dateOfBirth by remember { mutableStateOf(TextFieldValue(viewModel.dateOfBirth)) }
-    var gender by remember { mutableStateOf(TextFieldValue(viewModel.gender)) }
-    var address by remember { mutableStateOf(TextFieldValue(viewModel.address)) }
-    var state by remember { mutableStateOf(TextFieldValue(viewModel.state)) }
-    var pincode by remember { mutableStateOf(TextFieldValue(viewModel.pincode)) }
-    var district by remember { mutableStateOf(TextFieldValue(viewModel.district)) }
-
-    var collegeName by remember { mutableStateOf(TextFieldValue(viewModel.collegeName)) }
-    var branch by remember { mutableStateOf(TextFieldValue(viewModel.branch)) }
-    var course by remember { mutableStateOf(TextFieldValue(viewModel.course)) }
-    var passOutYear by remember { mutableStateOf(TextFieldValue(viewModel.passOutYear)) }
-
-    var resumeFilename by remember { mutableStateOf(TextFieldValue(viewModel.resumeFilename)) }
+    // Collecting UserProfile StateFlow
+    val userProfile by viewModel.userProfile.collectAsState()
 
     // Launcher for image selection
     val imageLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // Upload the selected image via ViewModel with Context
+            // Upload the selected image via ViewModel
             viewModel.uploadProfileImage(
-                imageUri = it,
-                context = context
+                imageUri = it
             )
         }
     }
@@ -119,12 +99,10 @@ fun UserProfileScreen(
         uri?.let {
             // Extract filename
             val filename = getFileNameFromUri(context, it)
-            resumeFilename = TextFieldValue(filename)
-            // Upload the selected resume via ViewModel with Context
+            // Upload the selected resume via ViewModel
             viewModel.uploadResume(
                 resumeUriLocal = it,
-                filename = filename,
-                context = context
+                filename = filename
             )
         }
     }
@@ -157,7 +135,7 @@ fun UserProfileScreen(
                 actions = {
                     Button(
                         onClick = {
-                            navController.navigate("profile_creation_screen")
+                            navController.navigate(Screens.ProfileCreationScreen.route)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent,
@@ -192,60 +170,72 @@ fun UserProfileScreen(
         containerColor = Color.White,
         contentColor = Color.Black
     ) { innerPadding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-                .background(Color.White)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
-        ) {
-            // Profile Image Card
-            item {
-                UserImageCard(
-                    profileImageUri = profileImageUri,
-                    onEditClick = {
-                        // Trigger image picker
-                        imageLauncher.launch("image/*")
-                    }
-                )
-            }
+        userProfile?.let { profile ->
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+                    .background(Color.White)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Profile Image Card
+                item {
+                    UserImageCard(
+                        profileImageUri = profile.profileImageUrl,
+                        onEditClick = {
+                            // Trigger image picker
+                            imageLauncher.launch("image/*")
+                        }
+                    )
+                }
 
-            // User Details Card
-            item {
-                UserDetailsCard(
-                    fullName = fullName,
-                    email = email,
-                    phoneNumber = phoneNumber,
-                    dateOfBirth = dateOfBirth,
-                    gender = gender,
-                    address = address,
-                    state = state,
-                    pincode = pincode,
-                    district = district
-                )
-            }
+                // User Details Card
+                item {
+                    UserDetailsCard(
+                        fullName = profile.fullName,
+                        email = profile.email,
+                        phoneNumber = profile.phoneNumber,
+                        dateOfBirth = profile.dateOfBirth,
+                        gender = profile.gender,
+                        address = profile.address,
+                        state = profile.state,
+                        pincode = profile.pincode,
+                        district = profile.district
+                    )
+                }
 
-            // College/University Details Card
-            item {
-                CollegeDetailsCard(
-                    collegeName = collegeName,
-                    branch = branch,
-                    course = course,
-                    passOutYear = passOutYear
-                )
-            }
+                // College/University Details Card
+                item {
+                    CollegeDetailsCard(
+                        collegeName = profile.collegeName,
+                        branch = profile.branch,
+                        course = profile.course,
+                        passOutYear = profile.passOutYear
+                    )
+                }
 
-            // Resume Card
-            item {
-                ResumeCard(
-                    resumeUri = resumeUri,
-                    resumeFilename = resumeFilename.text,
-                    onUploadClick = {
-                        // Trigger resume picker
-                        resumePickerLauncher.launch("application/pdf")
-                    }
-                )
+                // Resume Card
+                item {
+                    ResumeCard(
+                        resumeUri = profile.resumeUrl ?: "",
+                        resumeFilename = profile.resumeFilename ?: "",
+                        onUploadClick = {
+                            // Trigger resume picker
+                            resumePickerLauncher.launch("application/pdf")
+                        }
+                    )
+                }
+            }
+        } ?: run {
+            // If userProfile is null, show a message or initiate fetching
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Loading profile...", style = MaterialTheme.typography.bodyLarge)
             }
         }
     }
@@ -269,7 +259,7 @@ fun UserImageCard(profileImageUri: String?, onEditClick: () -> Unit) {
             modifier = Modifier
                 .size(120.dp)
         ) {
-            if (profileImageUri != null && profileImageUri.isNotEmpty()) {
+            if (!profileImageUri.isNullOrEmpty()) {
                 AsyncImage(
                     model = profileImageUri,
                     contentDescription = "User Image",
@@ -315,15 +305,15 @@ fun UserImageCard(profileImageUri: String?, onEditClick: () -> Unit) {
  */
 @Composable
 fun UserDetailsCard(
-    fullName: TextFieldValue,
-    email: TextFieldValue,
-    phoneNumber: TextFieldValue,
-    dateOfBirth: TextFieldValue,
-    gender: TextFieldValue,
-    address: TextFieldValue,
-    state: TextFieldValue,
-    pincode: TextFieldValue,
-    district: TextFieldValue
+    fullName: String,
+    email: String,
+    phoneNumber: String,
+    dateOfBirth: String,
+    gender: String,
+    address: String,
+    state: String,
+    pincode: String,
+    district: String
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.LightGray),
@@ -338,23 +328,23 @@ fun UserDetailsCard(
                 color = Color.Black
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileDetailItem(label = "Full Name", value = fullName.text)
+            ProfileDetailItem(label = "Full Name", value = fullName)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Email", value = email.text)
+            ProfileDetailItem(label = "Email", value = email)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Phone Number", value = phoneNumber.text)
+            ProfileDetailItem(label = "Phone Number", value = phoneNumber)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Date of Birth", value = dateOfBirth.text)
+            ProfileDetailItem(label = "Date of Birth", value = dateOfBirth)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Gender", value = gender.text)
+            ProfileDetailItem(label = "Gender", value = gender)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Address", value = address.text)
+            ProfileDetailItem(label = "Address", value = address)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "State", value = state.text)
+            ProfileDetailItem(label = "State", value = state)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Pincode", value = pincode.text)
+            ProfileDetailItem(label = "Pincode", value = pincode)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "District", value = district.text)
+            ProfileDetailItem(label = "District", value = district)
         }
     }
 }
@@ -386,10 +376,10 @@ fun ProfileDetailItem(label: String, value: String) {
  */
 @Composable
 fun CollegeDetailsCard(
-    collegeName: TextFieldValue,
-    branch: TextFieldValue,
-    course: TextFieldValue,
-    passOutYear: TextFieldValue
+    collegeName: String,
+    branch: String,
+    course: String,
+    passOutYear: String
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.LightGray),
@@ -404,13 +394,13 @@ fun CollegeDetailsCard(
                 color = Color.Black
             )
             Spacer(modifier = Modifier.height(16.dp))
-            ProfileDetailItem(label = "College/University", value = collegeName.text)
+            ProfileDetailItem(label = "College/University", value = collegeName)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Branch", value = branch.text)
+            ProfileDetailItem(label = "Branch", value = branch)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Course/Degree", value = course.text)
+            ProfileDetailItem(label = "Course/Degree", value = course)
             Spacer(modifier = Modifier.height(8.dp))
-            ProfileDetailItem(label = "Pass-out Year", value = passOutYear.text)
+            ProfileDetailItem(label = "Pass-out Year", value = passOutYear)
         }
     }
 }
@@ -474,8 +464,7 @@ fun ResumeCard(
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT)
-                                    .show()
+                                Toast.makeText(context, "No PDF viewer found", Toast.LENGTH_SHORT).show()
                             }
                         } else {
                             Toast.makeText(context, "No resume uploaded", Toast.LENGTH_SHORT).show()
@@ -515,8 +504,7 @@ fun ResumeCard(
                                 context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
                             downloadManager.enqueue(request)
 
-                            Toast.makeText(context, "Resume downloading...", Toast.LENGTH_SHORT)
-                                .show()
+                            Toast.makeText(context, "Resume downloading...", Toast.LENGTH_SHORT).show()
                         } else {
                             Toast.makeText(context, "No resume uploaded", Toast.LENGTH_SHORT).show()
                         }
@@ -564,16 +552,17 @@ fun ResumeCard(
         }
     }
 }
-    /**
-     * Helper function to get the filename from URI.
-     */
-    private fun getFileNameFromUri(context: Context, uri: Uri): String {
-        val cursor = context.contentResolver.query(uri, null, null, null, null)
-        cursor?.use {
-            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (nameIndex != -1 && it.moveToFirst()) {
-                return it.getString(nameIndex)
-            }
+
+/**
+ * Helper function to get the filename from URI.
+ */
+private fun getFileNameFromUri(context: Context, uri: Uri): String {
+    val cursor = context.contentResolver.query(uri, null, null, null, null)
+    cursor?.use {
+        val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (nameIndex != -1 && it.moveToFirst()) {
+            return it.getString(nameIndex)
         }
-        return "Resume.pdf" // Default filename if retrieval fails
     }
+    return "Resume.pdf" // Default filename if retrieval fails
+}

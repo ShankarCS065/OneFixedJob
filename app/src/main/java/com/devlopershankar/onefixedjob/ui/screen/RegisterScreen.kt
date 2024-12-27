@@ -28,11 +28,8 @@ fun RegisterScreen(navController: NavController) {
             auth.createUserWithEmailAndPassword(email.trim(), password.trim())
                 .addOnCompleteListener { task ->
                     if (task.isSuccessful) {
-                        // If registration succeeds, navigate to the DashboardScreen
-                        navController.navigate(Screens.DashboardScreen.route) {
-                            // Remove the current screen from the back stack
-                            popUpTo(Screens.RegisterScreen.route) { inclusive = true }
-                        }
+                        // If registration succeeds, navigate to the ProfileCreationScreen
+                        navController.navigate(Screens.LoginScreen.route)
                     } else {
                         // Handle any registration errors (e.g., user already exists, invalid email, etc.)
                     }
