@@ -2,6 +2,7 @@
 package com.devlopershankar.onefixedjob.ui.viewmodel
 
 import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devlopershankar.onefixedjob.data.UserProfile
@@ -16,7 +17,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
-import android.util.Log
 
 class UserProfileViewModel : ViewModel() {
 
@@ -330,4 +330,4 @@ class UserProfileViewModel : ViewModel() {
     companion object {
         private const val TAG = "UserProfileViewModel"
     }
-}
+}  

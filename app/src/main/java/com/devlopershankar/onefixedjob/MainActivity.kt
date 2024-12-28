@@ -34,7 +34,6 @@ class MainActivity : ComponentActivity() {
                     val scope = rememberCoroutineScope()
 
                     // Handle logout navigation based on ViewModel events
-                    // Note: Ensure that UiEvent.LogoutSuccess exists in your ViewModel
                     LaunchedEffect(key1 = userProfileViewModel) {
                         userProfileViewModel.eventFlow.collectLatest { event ->
                             when (event) {
@@ -107,7 +106,8 @@ class MainActivity : ComponentActivity() {
                                         scope.launch {
                                             drawerState.open()
                                         }
-                                    }
+                                    },
+                                    userProfileViewModel = userProfileViewModel // Pass the ViewModel
                                 )
                             }
 

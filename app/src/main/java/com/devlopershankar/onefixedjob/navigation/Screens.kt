@@ -18,7 +18,12 @@ sealed class Screens(val route: String) {
     object MoreScreen : Screens("more_screen")
     object NotificationScreen : Screens("notification_screen")
     object HelpScreen : Screens("help_screen")
-    object JobDetailScreen : Screens("job_detail_screen/{applyLink}")
+
+    // JobDetailScreen with applyLink argument
+    object JobDetailScreen : Screens("job_detail_screen/{applyLink}") {
+        fun createRoute(applyLink: String) = "job_detail_screen/$applyLink"
+    }
+
     object CourseScreen : Screens("course_screen")
     object PracticeScreen : Screens("practice_screen")
     object ChatCreationScreen : Screens("chat_creation_screen")

@@ -19,11 +19,7 @@ fun JobCardVertical(job: JobInfo, navController: NavController) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(80.dp)
-            .clickable {
-                // Navigate to JobDetailScreen with applyLink
-                navController.navigate("${Screens.JobDetailScreen.route}/${job.applyLink}")
-            },
+            .height(80.dp),
         elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
@@ -45,20 +41,23 @@ fun JobCardVertical(job: JobInfo, navController: NavController) {
                 modifier = Modifier.weight(1f)
             ) {
                 Text(
-                    job.companyName,
+                    text = job.companyName,
                     style = MaterialTheme.typography.bodyMedium,
                     fontWeight = FontWeight.Bold
                 )
-                Text(job.roleName, style = MaterialTheme.typography.bodySmall)
+                Text(
+                    text = job.roleName,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
             Text(
                 text = "Apply",
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.primary,
+                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.primary),
                 modifier = Modifier
                     .padding(end = 8.dp)
                     .clickable {
-                        // Handle Apply action (e.g., open link)
+                        // Navigate to JobDetailScreen with applyLink
+                        navController.navigate(Screens.JobDetailScreen.createRoute(job.applyLink))
                     }
             )
         }

@@ -18,16 +18,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.devlopershankar.onefixedjob.R
 import com.devlopershankar.onefixedjob.navigation.Screens
-import com.google.firebase.auth.FirebaseUser
-import com.google.firebase.auth.FirebaseUserMetadata
+import com.devlopershankar.onefixedjob.ui.viewmodel.UserProfileViewModel
 import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DashboardScreen(
     navController: NavController,
-    onOpenDrawer: () -> Unit // Accept the onOpenDrawer lambda
+    onOpenDrawer: () -> Unit, // Accept the onOpenDrawer lambda
+    userProfileViewModel: UserProfileViewModel = viewModel()
 ) {
+    val userProfile by userProfileViewModel.userProfile.collectAsState()
+    val userName = userProfile?.fullName?.ifBlank { "User" } ?: "User"
+
     // Coroutine scope for handling UI events if needed
     val scope = rememberCoroutineScope()
     // State to track the selected item in bottom navigation
@@ -43,9 +46,6 @@ fun DashboardScreen(
         BottomNavItem("More", R.drawable.ic_more)
     )
 
-    // Example: logged-in user’s name
-    val userName = FirebaseUserMetadata.NULL // Replace with actual user name logic
-
     // Quick actions: 4 cards in a 2 × 2 grid
     val quickActions = listOf("Job", "Internship", "Course", "Practice")
 
@@ -54,9 +54,14 @@ fun DashboardScreen(
         JobInfo(
             companyName = "Company $index",
             roleName = "Role $index",
-            applyLink = "https://example.com/apply/$index"
+            applyLink = if (index == 0) {
+                "https://cdn.photographylife.com/wp-content/uploads/2014/09/Nikon-D750-Image-Samples-2.jpg"
+            } else {
+                "https://example.com/apply/$index"
+            }
         )
     }
+
 
     // 14 jobs for the vertical list
     val verticalJobs = List(14) { index ->
@@ -236,4 +241,3 @@ fun DashboardScreen(
         }
     }
 }
-
