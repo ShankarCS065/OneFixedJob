@@ -22,13 +22,13 @@ fun SplashScreen(navController: NavController) {
         val currentUser = Firebase.auth.currentUser
         if (currentUser != null) {
             // Navigate to Dashboard
-            navController.navigate(Screens.DashboardScreen.route) {
-                popUpTo(Screens.SplashScreen.route) { inclusive = true }
+            navController.navigate(Screens.DashboardScreen) {
+                popUpTo(Screens.SplashScreen) { inclusive = true }
             }
         } else {
             // Go back to Login
-            navController.navigate(Screens.LoginScreen.route) {
-                popUpTo(Screens.SplashScreen.route) { inclusive = true }
+            navController.navigate(Screens.LoginScreen) {
+                popUpTo(Screens.SplashScreen) { inclusive = true }
             }
         }
     }

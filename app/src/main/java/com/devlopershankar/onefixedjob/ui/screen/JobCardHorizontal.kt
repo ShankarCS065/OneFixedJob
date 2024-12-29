@@ -1,57 +1,73 @@
 // JobCardHorizontal.kt
-package com.devlopershankar.onefixedjob.ui.screen
+package com.devlopershankar.onefixedjob.ui.components
 
-import android.net.Uri
+import androidx.compose.foundation.Image
+import com.devlopershankar.onefixedjob.ui.model.Opportunity
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
-import com.devlopershankar.onefixedjob.navigation.Screens
-
-data class JobInfo(
-    val companyName: String,
-    val roleName: String,
-    val applyLink: String
-)
+import coil.compose.rememberImagePainter
+import com.devlopershankar.onefixedjob.R
 
 @Composable
-fun JobCardHorizontal(job: JobInfo, navController: NavController) {
+fun JobCardHorizontal(
+    opportunity: Opportunity,
+    navController: NavController
+) {
     Card(
         modifier = Modifier
-            .width(180.dp)
-            .height(100.dp),
-        elevation = CardDefaults.cardElevation(2.dp)
+            .width(200.dp)
+            .clickable {
+                // Navigate to Opportunity Detail Screen based on type
+                when (opportunity.type) {
+                    "Job" -> navController.navigate("job_detail/${opportunity.id}")
+                    "Internship" -> navController.navigate("internship_detail/${opportunity.id}")
+                    "Course" -> navController.navigate("course_detail/${opportunity.id}")
+                    "Practice" -> navController.navigate("practice_detail/${opportunity.id}")
+                }
+            },
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
-            verticalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = job.companyName,
-                style = MaterialTheme.typography.bodyMedium,
-                fontWeight = FontWeight.Bold
-            )
-            Text(
-                text = job.roleName,
-                style = MaterialTheme.typography.bodySmall
-            )
-            Text(
-                text = "Apply",
-                style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.primary),
-                modifier = Modifier
-                    .align(Alignment.End)
-                    .clickable {
-                        val encodedUrl = Uri.encode(job.applyLink)
-                        navController.navigate(Screens.JobDetailScreen.createRoute(encodedUrl))
+            Image(
+                painter = rememberImagePainter(
+                    data = opportunity.imageUrl,
+                    builder = {
+                        crossfade(true)
+                        placeholder(R.drawable.ic_image_placeholder)
+                        error(R.drawable.ic_broken_image)
                     }
+                ),
+                contentDescription = "Company Logo",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(100.dp)
+                    .clip(RoundedCornerShape(topStart = 8.dp, topEnd = 8.dp)),
+                contentScale = ContentScale.Crop
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = opportunity.roleName,
+                style = MaterialTheme.typography.titleSmall,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(
+                text = opportunity.companyName,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(horizontal = 8.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }

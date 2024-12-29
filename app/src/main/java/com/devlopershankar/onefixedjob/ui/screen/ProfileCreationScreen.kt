@@ -1,13 +1,12 @@
 // ProfileCreationScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.provider.OpenableColumns
-import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import com.devlopershankar.onefixedjob.ui.model.Opportunity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -35,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.devlopershankar.onefixedjob.R
-import com.devlopershankar.onefixedjob.navigation.Screens
 import com.devlopershankar.onefixedjob.ui.viewmodel.UserProfileViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -54,19 +52,19 @@ fun ProfileCreationScreen(
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is UserProfileViewModel.UiEvent.ShowToast -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    // Show toast or Snackbar
+                    // Example using Toast:
+                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
                 }
-
                 is UserProfileViewModel.UiEvent.SaveSuccess -> {
-                    Toast.makeText(context, "Profile saved successfully!", Toast.LENGTH_SHORT)
-                        .show()
+                    // Show success message and navigate back or to another screen
+                    android.widget.Toast.makeText(context, "Profile saved successfully!", android.widget.Toast.LENGTH_SHORT).show()
                     navController.navigateUp()
                 }
-
                 is UserProfileViewModel.UiEvent.ShowError -> {
-                    Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+                    // Show error message
+                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
                 }
-
                 is UserProfileViewModel.UiEvent.LogoutSuccess -> {
                     // Handle logout success if needed
                 }
@@ -80,42 +78,42 @@ fun ProfileCreationScreen(
     // Initialize state variables and update them when userProfile changes
     var isInitialized by remember { mutableStateOf(false) }
 
-    var fullName by remember { mutableStateOf(TextFieldValue(userProfile.fullName)) }
-    var email by remember { mutableStateOf(TextFieldValue(userProfile.email)) }
-    var phoneNumber by remember { mutableStateOf(TextFieldValue(userProfile.phoneNumber)) }
-    var dateOfBirth by remember { mutableStateOf(TextFieldValue(userProfile.dateOfBirth)) }
-    var gender by remember { mutableStateOf(TextFieldValue(userProfile.gender)) }
-    var address by remember { mutableStateOf(TextFieldValue(userProfile.address)) }
-    var state by remember { mutableStateOf(TextFieldValue(userProfile.state)) }
-    var pincode by remember { mutableStateOf(TextFieldValue(userProfile.pincode)) }
-    var district by remember { mutableStateOf(TextFieldValue(userProfile.district)) }
+    var fullName by remember { mutableStateOf(TextFieldValue(userProfile?.fullName ?: "")) }
+    var email by remember { mutableStateOf(TextFieldValue(userProfile?.email ?: "")) }
+    var phoneNumber by remember { mutableStateOf(TextFieldValue(userProfile?.phoneNumber ?: "")) }
+    var dateOfBirth by remember { mutableStateOf(TextFieldValue(userProfile?.dateOfBirth ?: "")) }
+    var gender by remember { mutableStateOf(TextFieldValue(userProfile?.gender ?: "")) }
+    var address by remember { mutableStateOf(TextFieldValue(userProfile?.address ?: "")) }
+    var state by remember { mutableStateOf(TextFieldValue(userProfile?.state ?: "")) }
+    var pincode by remember { mutableStateOf(TextFieldValue(userProfile?.pincode ?: "")) }
+    var district by remember { mutableStateOf(TextFieldValue(userProfile?.district ?: "")) }
 
-    var collegeName by remember { mutableStateOf(TextFieldValue(userProfile.collegeName)) }
-    var branch by remember { mutableStateOf(TextFieldValue(userProfile.branch)) }
-    var course by remember { mutableStateOf(TextFieldValue(userProfile.course)) }
-    var passOutYear by remember { mutableStateOf(TextFieldValue(userProfile.passOutYear)) }
+    var collegeName by remember { mutableStateOf(TextFieldValue(userProfile?.collegeName ?: "")) }
+    var branch by remember { mutableStateOf(TextFieldValue(userProfile?.branch ?: "")) }
+    var course by remember { mutableStateOf(TextFieldValue(userProfile?.course ?: "")) }
+    var passOutYear by remember { mutableStateOf(TextFieldValue(userProfile?.passOutYear ?: "")) }
 
-    var resumeFilename by remember { mutableStateOf(TextFieldValue(userProfile.resumeFilename)) }
+    var resumeFilename by remember { mutableStateOf(TextFieldValue(userProfile?.resumeFilename ?: "")) }
 
     // Update state variables when userProfile changes (only once)
     LaunchedEffect(userProfile) {
-        if (!isInitialized) {
-            fullName = TextFieldValue(userProfile.fullName)
-            email = TextFieldValue(userProfile.email)
-            phoneNumber = TextFieldValue(userProfile.phoneNumber)
-            dateOfBirth = TextFieldValue(userProfile.dateOfBirth)
-            gender = TextFieldValue(userProfile.gender)
-            address = TextFieldValue(userProfile.address)
-            state = TextFieldValue(userProfile.state)
-            pincode = TextFieldValue(userProfile.pincode)
-            district = TextFieldValue(userProfile.district)
+        if (!isInitialized && userProfile != null) {
+            fullName = TextFieldValue(userProfile!!.fullName)
+            email = TextFieldValue(userProfile!!.email)
+            phoneNumber = TextFieldValue(userProfile!!.phoneNumber)
+            dateOfBirth = TextFieldValue(userProfile!!.dateOfBirth)
+            gender = TextFieldValue(userProfile!!.gender)
+            address = TextFieldValue(userProfile!!.address)
+            state = TextFieldValue(userProfile!!.state)
+            pincode = TextFieldValue(userProfile!!.pincode)
+            district = TextFieldValue(userProfile!!.district)
 
-            collegeName = TextFieldValue(userProfile.collegeName)
-            branch = TextFieldValue(userProfile.branch)
-            course = TextFieldValue(userProfile.course)
-            passOutYear = TextFieldValue(userProfile.passOutYear)
+            collegeName = TextFieldValue(userProfile!!.collegeName)
+            branch = TextFieldValue(userProfile!!.branch)
+            course = TextFieldValue(userProfile!!.course)
+            passOutYear = TextFieldValue(userProfile!!.passOutYear)
 
-            resumeFilename = TextFieldValue(userProfile.resumeFilename)
+            resumeFilename = TextFieldValue(userProfile!!.resumeFilename)
 
             isInitialized = true
         }
@@ -153,10 +151,10 @@ fun ProfileCreationScreen(
     val isLoading by viewModel.isLoading.collectAsState()
 
     // Collect resumeUri state as State
-    val resumeUri = userProfile.resumeUrl
+    val resumeUri = userProfile?.resumeUrl ?: ""
 
     // Collect profileImageUri state as State
-    val profileImageUri = userProfile.profileImageUrl
+    val profileImageUri = userProfile?.profileImageUrl ?: ""
 
     // Loading Indicator
     if (isLoading) {
@@ -216,7 +214,7 @@ fun ProfileCreationScreen(
             ) {
                 if (profileImageUri.isNotEmpty()) {
                     AsyncImage(
-                        model = Uri.parse(profileImageUri),
+                        model = profileImageUri,
                         contentDescription = "Selected Profile Image",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
@@ -443,17 +441,17 @@ fun ProfileCreationScreen(
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
-                                Toast.makeText(
+                                android.widget.Toast.makeText(
                                     context,
                                     "No PDF viewer found",
-                                    Toast.LENGTH_SHORT
+                                    android.widget.Toast.LENGTH_SHORT
                                 ).show()
                             }
                         } else {
-                            Toast.makeText(
+                            android.widget.Toast.makeText(
                                 context,
                                 "No resume uploaded",
-                                Toast.LENGTH_SHORT
+                                android.widget.Toast.LENGTH_SHORT
                             ).show()
                         }
                     },
@@ -473,10 +471,10 @@ fun ProfileCreationScreen(
                                     try {
                                         context.startActivity(intent)
                                     } catch (e: Exception) {
-                                        Toast.makeText(
+                                        android.widget.Toast.makeText(
                                             context,
                                             "No PDF viewer found",
-                                            Toast.LENGTH_SHORT
+                                            android.widget.Toast.LENGTH_SHORT
                                         ).show()
                                     }
                                 }
@@ -524,17 +522,17 @@ fun ProfileCreationScreen(
         }
     }
 }
-    /**
-     * Helper function to get the filename from URI.
-     */
-    private fun getFileNameFromUri(context: Context, uri: Uri): String {
-        val cursor = context.contentResolver.query(uri, null, null, null, null)
-        cursor?.use {
-            val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
-            if (nameIndex != -1 && it.moveToFirst()) {
-                return it.getString(nameIndex)
-            }
-        }
-        return "Resume.pdf" // Default filename if retrieval fails
-    }
 
+/**
+ * Helper function to get the filename from URI.
+ */
+private fun getFileNameFromUri(context: android.content.Context, uri: Uri): String {
+    val cursor = context.contentResolver.query(uri, null, null, null, null)
+    cursor?.use {
+        val nameIndex = it.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+        if (nameIndex != -1 && it.moveToFirst()) {
+            return it.getString(nameIndex)
+        }
+    }
+    return "Resume.pdf" // Default filename if retrieval fails
+}

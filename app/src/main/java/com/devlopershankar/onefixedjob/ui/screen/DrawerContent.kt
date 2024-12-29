@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 /**
  * Data class representing each menu item in the drawer.
  */
-data class DrawerMenuItemData(val iconRes: Int, val label: String, val screen: Screens)
+data class DrawerMenuItemData(val iconRes: Int, val label: String, val screen: String)
 
 /**
  * Composable function representing the content of the navigation drawer.
@@ -134,7 +134,7 @@ fun DrawerContent(
                     iconRes = item.iconRes,
                     label = item.label,
                     onClick = {
-                        navController.navigate(item.screen.route) {
+                        navController.navigate(item.screen) {
                             popUpTo(navController.graph.startDestinationId) { inclusive = false }
                             launchSingleTop = true
                         }

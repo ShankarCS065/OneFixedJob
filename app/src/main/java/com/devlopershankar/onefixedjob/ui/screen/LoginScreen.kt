@@ -29,8 +29,9 @@ fun LoginScreen(navController: NavController) {
             .addOnCompleteListener { task ->
                 if (task.isSuccessful) {
                     // Navigate to Splash
-                    navController.navigate(Screens.DashboardScreen.route) {
-                        popUpTo(Screens.LoginScreen.route) { inclusive = true }
+
+                    navController.navigate(Screens.DashboardScreen) {
+                        popUpTo(Screens.LoginScreen) { inclusive = true }
                     }
                 } else {
                     // Handle error
@@ -113,7 +114,7 @@ fun LoginScreen(navController: NavController) {
             }
         }){
             TextButton(onClick = {
-                navController.navigate(Screens.ForgotPasswordScreen.route)
+                navController.navigate(Screens.ForgotPasswordScreen)
             }) {
                 Text("Forgot Password?")
             }
@@ -122,7 +123,7 @@ fun LoginScreen(navController: NavController) {
 
         // Registration link
         TextButton(onClick = {
-            navController.navigate(Screens.RegisterScreen.route)
+            navController.navigate(Screens.RegisterScreen)
         }) {
             Text("New Register?")
         }

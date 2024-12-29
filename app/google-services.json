@@ -24,25 +24,6 @@
           "other_platform_oauth_client": []
         }
       }
-    },
-    {
-      "client_info": {
-        "mobilesdk_app_id": "1:689536523043:android:a102549f988eab8dd0ca96",
-        "android_client_info": {
-          "package_name": "com.krashkrosh748199.shoption"
-        }
-      },
-      "oauth_client": [],
-      "api_key": [
-        {
-          "current_key": "AIzaSyC7FY8kGquBdkOAQZjhgC4ZEMM-oUUB4sk"
-        }
-      ],
-      "services": {
-        "appinvite_service": {
-          "other_platform_oauth_client": []
-        }
-      }
     }
   ],
   "configuration_version": "1"

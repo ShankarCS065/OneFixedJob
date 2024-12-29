@@ -1,7 +1,7 @@
 // DashboardScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
-import androidx.compose.foundation.clickable
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -18,6 +18,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.devlopershankar.onefixedjob.R
 import com.devlopershankar.onefixedjob.navigation.Screens
+import com.devlopershankar.onefixedjob.ui.components.JobCardHorizontal
+import com.devlopershankar.onefixedjob.ui.components.JobCardVertical
+import com.devlopershankar.onefixedjob.ui.viewmodel.OpportunityViewModel
 import com.devlopershankar.onefixedjob.ui.viewmodel.UserProfileViewModel
 import kotlinx.coroutines.launch
 
@@ -26,15 +29,20 @@ import kotlinx.coroutines.launch
 fun DashboardScreen(
     navController: NavController,
     onOpenDrawer: () -> Unit, // Accept the onOpenDrawer lambda
-    userProfileViewModel: UserProfileViewModel = viewModel()
+    userProfileViewModel: UserProfileViewModel = viewModel(),
+    opportunityViewModel: OpportunityViewModel = viewModel()
 ) {
+    // Collecting data from ViewModels
     val userProfile by userProfileViewModel.userProfile.collectAsState()
+    val isAdmin by userProfileViewModel.isAdmin.collectAsState()
+    val opportunities by opportunityViewModel.opportunities.collectAsState()
+    val isLoading by opportunityViewModel.isLoading.collectAsState()
+    val error by opportunityViewModel.error.collectAsState()
+
     val userName = userProfile?.fullName?.ifBlank { "User" } ?: "User"
 
     // Coroutine scope for handling UI events if needed
     val scope = rememberCoroutineScope()
-    // State to track the selected item in bottom navigation
-    val selectedIndex = remember { mutableStateOf(0) }
 
     // Define bottom navigation items with labels and icons
     data class BottomNavItem(val label: String, val iconRes: Int)
@@ -48,29 +56,6 @@ fun DashboardScreen(
 
     // Quick actions: 4 cards in a 2 × 2 grid
     val quickActions = listOf("Job", "Internship", "Course", "Practice")
-
-    // 7 jobs for the horizontal row
-    val horizontalJobs = List(7) { index ->
-        JobInfo(
-            companyName = "Company $index",
-            roleName = "Role $index",
-            applyLink = if (index == 0) {
-                "https://cdn.photographylife.com/wp-content/uploads/2014/09/Nikon-D750-Image-Samples-2.jpg"
-            } else {
-                "https://example.com/apply/$index"
-            }
-        )
-    }
-
-
-    // 14 jobs for the vertical list
-    val verticalJobs = List(14) { index ->
-        JobInfo(
-            companyName = "BigCompany $index",
-            roleName = "Position $index",
-            applyLink = "https://bigcompany.com/apply/$index"
-        )
-    }
 
     // Scaffold provides the basic layout structure with TopAppBar and BottomNavigation
     Scaffold(
@@ -90,7 +75,7 @@ fun DashboardScreen(
                 actions = {
                     // Notifications icon -> NotificationScreen
                     IconButton(onClick = {
-                        navController.navigate(Screens.NotificationScreen.route)
+                        navController.navigate(Screens.NotificationScreen)
                     }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_notifications),
@@ -100,7 +85,7 @@ fun DashboardScreen(
                     }
                     // Chat icon -> ChatCreationScreen
                     IconButton(onClick = {
-                        navController.navigate(Screens.ChatCreationScreen.route)
+                        navController.navigate(Screens.ChatCreationScreen)
                     }) {
                         Icon(
                             painter = painterResource(id = R.drawable.ic_chat),
@@ -124,29 +109,28 @@ fun DashboardScreen(
                             )
                         },
                         label = { Text(item.label) },
-                        selected = (selectedIndex.value == index),
+                        selected = false, // Update selection logic as needed
                         onClick = {
-                            selectedIndex.value = index
                             // Implement navigation based on selected item
                             when (item.label) {
                                 "Home" -> {
-                                    navController.navigate(Screens.DashboardScreen.route) {
-                                        popUpTo(Screens.DashboardScreen.route) {
+                                    navController.navigate(Screens.DashboardScreen) {
+                                        popUpTo(Screens.DashboardScreen) {
                                             inclusive = true
                                         }
                                     }
                                 }
 
                                 "Internship" -> {
-                                    navController.navigate(Screens.InternshipScreen.route)
+                                    navController.navigate(Screens.InternshipScreen)
                                 }
 
                                 "Job" -> {
-                                    navController.navigate(Screens.JobScreen.route)
+                                    navController.navigate(Screens.JobScreen)
                                 }
 
                                 "More" -> {
-                                    navController.navigate(Screens.MoreScreen.route)
+                                    navController.navigate(Screens.MoreScreen)
                                 }
                             }
                         }
@@ -201,14 +185,16 @@ fun DashboardScreen(
             item {
                 TwoByTwoGrid(
                     quickActions = quickActions,
-                    navController = navController
+                    navController = navController,
+                    isAdmin = isAdmin,
+                    viewModel = opportunityViewModel
                 )
             }
 
-            // 3) Horizontal row of 7 recommended jobs
+            // 3) Horizontal row of recommended jobs
             item {
                 Text(
-                    text = "Recommended Jobs (7)",
+                    text = "Recommended Jobs",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
@@ -221,22 +207,71 @@ fun DashboardScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
                     contentPadding = PaddingValues(horizontal = 16.dp)
                 ) {
-                    items(horizontalJobs) { job ->
-                        JobCardHorizontal(job = job, navController = navController)
+                    // Assuming top 7 most recent jobs as recommended
+                    val recommendedJobs = opportunities.filter { it.type == "Job" }.take(7)
+                    items(recommendedJobs) { job ->
+                        JobCardHorizontal(opportunity = job, navController = navController)
                     }
                 }
             }
 
-            // 4) Vertical list of 14 more jobs
+            // 4) Horizontal row of recommended internships
             item {
                 Text(
-                    text = "More Jobs (14)",
+                    text = "Recommended Internships",
                     style = MaterialTheme.typography.titleMedium,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
             }
-            items(verticalJobs) { job ->
-                JobCardVertical(job = job, navController = navController)
+            item {
+                LazyRow(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp)
+                ) {
+                    // Assuming top 7 most recent internships as recommended
+                    val recommendedInternships = opportunities.filter { it.type == "Internship" }.take(7)
+                    items(recommendedInternships) { internship ->
+                        JobCardHorizontal(opportunity = internship, navController = navController)
+                    }
+                }
+            }
+
+            // 5) Vertical list of more jobs
+            item {
+                Text(
+                    text = "More Jobs",
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+            items(opportunities.filter { it.type == "Job" }.drop(7)) { job -> // Assuming first 7 are recommended
+                JobCardVertical(opportunity = job, navController = navController, isAdmin = isAdmin)
+            }
+
+            // Similarly, you can add sections for Courses and Practices
+        }
+
+        // Handle loading and error states
+        if (isLoading) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator()
+            }
+        }
+
+        if (error != null) {
+            LaunchedEffect(error) {
+                // Show error message using a Snackbar or Toast
+                // For example:
+                // scaffoldState.snackbarHostState.showSnackbar(error!!)
+                Log.e("DashboardScreen", "Error: $error")
             }
         }
     }

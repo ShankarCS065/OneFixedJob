@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
@@ -25,13 +26,17 @@ class UserProfileViewModel : ViewModel() {
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
 
-    // StateFlow for UserProfile (Non-Nullable)
-    private val _userProfile = MutableStateFlow<UserProfile>(UserProfile())
-    val userProfile: StateFlow<UserProfile> = _userProfile
+    // StateFlow for UserProfile
+    private val _userProfile = MutableStateFlow<UserProfile?>(null)
+    val userProfile: StateFlow<UserProfile?> = _userProfile
 
     // Loading State
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
+
+    // Admin State via Firestore 'isAdmin' field
+    private val _isAdmin = MutableStateFlow(false)
+    val isAdmin: StateFlow<Boolean> = _isAdmin
 
     // Event Flow for UI Events
     private val _eventFlow = MutableSharedFlow<UiEvent>()
@@ -45,9 +50,60 @@ class UserProfileViewModel : ViewModel() {
         data class ShowError(val message: String) : UiEvent()
     }
 
+    private var authStateListener: FirebaseAuth.AuthStateListener? = null
+
     init {
-        // Fetch user profile data upon ViewModel initialization
-        fetchUserProfile()
+        observeAuthState()
+    }
+
+    private fun observeAuthState() {
+        authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+            val user = firebaseAuth.currentUser
+            if (user != null) {
+                // User is signed in
+                Log.d(TAG, "User signed in: ${user.uid}")
+                fetchUserAdminStatus()
+                fetchUserProfile()
+            } else {
+                // User is signed out
+                _userProfile.value = null
+                _isAdmin.value = false
+                Log.d(TAG, "User signed out.")
+                viewModelScope.launch {
+                    _eventFlow.emit(UiEvent.LogoutSuccess)
+                }
+            }
+        }
+        auth.addAuthStateListener(authStateListener!!)
+    }
+
+    private fun fetchUserAdminStatus() {
+        val currentUser = auth.currentUser
+        if (currentUser != null) {
+            viewModelScope.launch {
+                try {
+                    // Fetch the user document from Firestore
+                    val userDoc = firestore.collection("users").document(currentUser.uid).get().await()
+                    if (userDoc.exists()) {
+                        val adminStatus = userDoc.getBoolean("isAdmin") ?: false
+                        _isAdmin.value = adminStatus
+                        Log.d(TAG, "User ${currentUser.uid} isAdmin = $adminStatus")
+                    } else {
+                        Log.d(TAG, "User document does not exist for UID: ${currentUser.uid}")
+                        _isAdmin.value = false
+                        _eventFlow.emit(UiEvent.ShowError("User profile not found."))
+                    }
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                    _isAdmin.value = false
+                    _eventFlow.emit(UiEvent.ShowError("Failed to fetch admin status: ${e.message}"))
+                }
+            }
+        } else {
+            // User not logged in
+            _isAdmin.value = false
+            Log.d(TAG, "No user is logged in.")
+        }
     }
 
     /**
@@ -58,13 +114,13 @@ class UserProfileViewModel : ViewModel() {
             try {
                 _isLoading.value = true
 
-                val userId = auth.currentUser?.uid
+                val currentUser = auth.currentUser
                     ?: throw Exception("User not authenticated")
 
-                Log.d(TAG, "Fetching user profile for userId: $userId")
+                Log.d(TAG, "Fetching user profile for userId: ${currentUser.uid}")
 
                 // Fetch the user document from Firestore
-                firestore.collection("users").document(userId).get().await().let { document ->
+                firestore.collection("users").document(currentUser.uid).get().await().let { document ->
                     if (document.exists()) {
                         Log.d(TAG, "User document exists. Parsing data.")
                         val userProfileData = document.toObject(UserProfile::class.java)
@@ -74,9 +130,10 @@ class UserProfileViewModel : ViewModel() {
                     } else {
                         Log.d(TAG, "User document does not exist. Initializing profile.")
                         // Initialize user profile if document doesn't exist
-                        initializeUserProfile(userId)
+                        initializeUserProfile(currentUser.uid)
                     }
                 }
+
             } catch (e: Exception) {
                 Log.e(TAG, "Error fetching user profile: ${e.message}", e)
                 _eventFlow.emit(UiEvent.ShowError("Failed to fetch profile: ${e.message}"))
@@ -111,8 +168,6 @@ class UserProfileViewModel : ViewModel() {
 
     /**
      * Method to upload the profile image to Firebase Storage.
-     *
-     * @param imageUri The URI of the selected profile image.
      */
     fun uploadProfileImage(imageUri: Uri) {
         viewModelScope.launch {
@@ -139,7 +194,7 @@ class UserProfileViewModel : ViewModel() {
                     .await()
 
                 // Update the UserProfile StateFlow
-                val updatedProfile = _userProfile.value.copy(profileImageUrl = downloadUrl.toString())
+                val updatedProfile = _userProfile.value?.copy(profileImageUrl = downloadUrl.toString())
                 _userProfile.value = updatedProfile
 
                 Log.d(TAG, "Profile image uploaded successfully: $downloadUrl")
@@ -158,9 +213,6 @@ class UserProfileViewModel : ViewModel() {
 
     /**
      * Method to upload the resume PDF to Firebase Storage.
-     *
-     * @param resumeUriLocal The URI of the selected resume PDF.
-     * @param filename The name of the resume file.
      */
     fun uploadResume(resumeUriLocal: Uri, filename: String) {
         viewModelScope.launch {
@@ -192,7 +244,7 @@ class UserProfileViewModel : ViewModel() {
                     ).await()
 
                 // Update the UserProfile StateFlow
-                val updatedProfile = _userProfile.value.copy(
+                val updatedProfile = _userProfile.value?.copy(
                     resumeUrl = downloadUrl.toString(),
                     resumeFilename = filename
                 )
@@ -214,16 +266,6 @@ class UserProfileViewModel : ViewModel() {
 
     /**
      * Method to update user personal details.
-     *
-     * @param fullName The user's full name.
-     * @param email The user's email address.
-     * @param phoneNumber The user's phone number.
-     * @param dateOfBirth The user's date of birth.
-     * @param gender The user's gender.
-     * @param address The user's address.
-     * @param state The user's state.
-     * @param pincode The user's pincode.
-     * @param district The user's district.
      */
     fun updateUserDetails(
         fullName: String,
@@ -237,7 +279,7 @@ class UserProfileViewModel : ViewModel() {
         district: String
     ) {
         // Update the UserProfile StateFlow
-        _userProfile.value = _userProfile.value.copy(
+        val updatedProfile = _userProfile.value?.copy(
             fullName = fullName,
             email = email,
             phoneNumber = phoneNumber,
@@ -248,15 +290,11 @@ class UserProfileViewModel : ViewModel() {
             pincode = pincode,
             district = district
         )
+        _userProfile.value = updatedProfile
     }
 
     /**
      * Method to update college/university details.
-     *
-     * @param collegeName The name of the college/university.
-     * @param branch The user's branch.
-     * @param course The user's course or degree.
-     * @param passOutYear The user's pass-out year.
      */
     fun updateCollegeDetails(
         collegeName: String,
@@ -265,12 +303,13 @@ class UserProfileViewModel : ViewModel() {
         passOutYear: String
     ) {
         // Update the UserProfile StateFlow
-        _userProfile.value = _userProfile.value.copy(
+        val updatedProfile = _userProfile.value?.copy(
             collegeName = collegeName,
             branch = branch,
             course = course,
             passOutYear = passOutYear
         )
+        _userProfile.value = updatedProfile
     }
 
     /**
@@ -330,4 +369,4 @@ class UserProfileViewModel : ViewModel() {
     companion object {
         private const val TAG = "UserProfileViewModel"
     }
-}  
+}

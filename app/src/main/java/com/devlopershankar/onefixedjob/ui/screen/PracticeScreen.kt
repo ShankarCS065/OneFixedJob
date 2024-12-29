@@ -1,52 +1,74 @@
+// PracticeScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack // Import ArrowBack icon
+import com.devlopershankar.onefixedjob.navigation.Screens
+import com.devlopershankar.onefixedjob.ui.components.OpportunityCard
+import com.devlopershankar.onefixedjob.ui.viewmodel.OpportunityViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PracticeScreen(navController: NavController) {
+fun PracticeScreen(
+    navController: NavController,
+    viewModel: OpportunityViewModel = viewModel()
+) {
+    val allPractices by viewModel.opportunities.collectAsState()
+    val practices = allPractices.filter { it.type == "Practice" }
+
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Practice") },
+                title = { Text("Practices") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack, // Use ArrowBack icon here
-                            contentDescription = "Back",
-                            modifier = Modifier.size(24.dp)
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Back"
                         )
                     }
                 }
             )
-        },
-        content = { innerPadding ->
-            // Replace with your custom layout for practice
-            Column(
+        }
+    ) { innerPadding ->
+        if (practices.isEmpty()) {
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
-                    .padding(16.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
+                    .padding(innerPadding),
+                contentAlignment = Alignment.Center
             ) {
-                Text(
-                    "Welcome to the Practice Screen!",
-                    style = MaterialTheme.typography.headlineMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Spacer(modifier = Modifier.height(16.dp))
-                // Add more UI elements as needed
+                Text(text = "No Practices Available.", style = MaterialTheme.typography.bodyLarge)
+            }
+        } else {
+            LazyColumn(
+                contentPadding = innerPadding,
+                modifier = Modifier.fillMaxSize(),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(practices) { practice ->
+                    OpportunityCard(
+                        opportunity = practice,
+                        onClick = {
+                            navController.navigate(Screens.practiceDetail(practice.id))
+                        },
+                        onEdit = {
+                            // Implement edit functionality if admin
+                            navController.navigate(Screens.editOpportunity(practice.id))
+                        }
+                    )
+                }
             }
         }
-    )
+    }
 }

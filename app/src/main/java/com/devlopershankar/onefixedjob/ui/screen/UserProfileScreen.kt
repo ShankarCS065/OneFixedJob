@@ -135,7 +135,7 @@ fun UserProfileScreen(
                 actions = {
                     Button(
                         onClick = {
-                            navController.navigate(Screens.ProfileCreationScreen.route)
+                            navController.navigate(Screens.ProfileCreationScreen)
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent,

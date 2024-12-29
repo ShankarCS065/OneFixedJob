@@ -1,46 +1,54 @@
-// JobDetailScreen.kt
+// CourseDetailScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
 import com.devlopershankar.onefixedjob.ui.components.OpportunityDetailContent
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.clickable
+
+// Inside your composable
+
 import com.devlopershankar.onefixedjob.ui.model.Opportunity
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
-import coil.compose.rememberImagePainter
-import com.devlopershankar.onefixedjob.R
 import com.devlopershankar.onefixedjob.ui.viewmodel.OpportunityViewModel
+import coil.compose.rememberImagePainter
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.devlopershankar.onefixedjob.R
+import androidx.compose.ui.res.painterResource
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JobDetailScreen(navController: NavController, jobId: String?) {
+fun CourseDetailScreen(navController: NavController, courseId: String?) {
     val opportunityViewModel: OpportunityViewModel = viewModel()
     var opportunity by remember { mutableStateOf<Opportunity?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(jobId) {
-        if (!jobId.isNullOrEmpty()) {
-            val fetchedOpportunity = opportunityViewModel.getOpportunityById(jobId)
-            if (fetchedOpportunity != null && fetchedOpportunity.type == "Job") {
+    LaunchedEffect(courseId) {
+        if (!courseId.isNullOrEmpty()) {
+            val fetchedOpportunity = opportunityViewModel.getOpportunityById(courseId)
+            if (fetchedOpportunity != null && fetchedOpportunity.type == "Course") {
                 opportunity = fetchedOpportunity
             } else {
-                errorMessage = "Job not found."
+                errorMessage = "Course not found."
             }
             isLoading = false
         } else {
-            errorMessage = "Invalid Job ID."
+            errorMessage = "Invalid Course ID."
             isLoading = false
         }
     }
@@ -48,7 +56,7 @@ fun JobDetailScreen(navController: NavController, jobId: String?) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Job Details") },
+                title = { Text("Course Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(

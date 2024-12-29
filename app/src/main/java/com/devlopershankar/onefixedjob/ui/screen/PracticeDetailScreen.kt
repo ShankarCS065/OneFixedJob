@@ -1,7 +1,6 @@
-// JobDetailScreen.kt
+// PracticeDetailScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
-import com.devlopershankar.onefixedjob.ui.components.OpportunityDetailContent
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import com.devlopershankar.onefixedjob.ui.model.Opportunity
@@ -24,23 +23,23 @@ import com.devlopershankar.onefixedjob.ui.viewmodel.OpportunityViewModel
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun JobDetailScreen(navController: NavController, jobId: String?) {
+fun PracticeDetailScreen(navController: NavController, practiceId: String?) {
     val opportunityViewModel: OpportunityViewModel = viewModel()
     var opportunity by remember { mutableStateOf<Opportunity?>(null) }
     var isLoading by remember { mutableStateOf(true) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    LaunchedEffect(jobId) {
-        if (!jobId.isNullOrEmpty()) {
-            val fetchedOpportunity = opportunityViewModel.getOpportunityById(jobId)
-            if (fetchedOpportunity != null && fetchedOpportunity.type == "Job") {
+    LaunchedEffect(practiceId) {
+        if (!practiceId.isNullOrEmpty()) {
+            val fetchedOpportunity = opportunityViewModel.getOpportunityById(practiceId)
+            if (fetchedOpportunity != null && fetchedOpportunity.type == "Practice") {
                 opportunity = fetchedOpportunity
             } else {
-                errorMessage = "Job not found."
+                errorMessage = "Practice not found."
             }
             isLoading = false
         } else {
-            errorMessage = "Invalid Job ID."
+            errorMessage = "Invalid Practice ID."
             isLoading = false
         }
     }
@@ -48,7 +47,7 @@ fun JobDetailScreen(navController: NavController, jobId: String?) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Job Details") },
+                title = { Text("Practice Details") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
@@ -77,3 +76,46 @@ fun JobDetailScreen(navController: NavController, jobId: String?) {
     }
 }
 
+@Composable
+fun OpportunityDetailContent(opportunity: Opportunity) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        Text(text = opportunity.roleName, style = MaterialTheme.typography.headlineMedium)
+        Text(text = "Company: ${opportunity.companyName}", style = MaterialTheme.typography.titleMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        Image(
+            painter = rememberImagePainter(
+                data = opportunity.imageUrl,
+                builder = {
+                    crossfade(true)
+                    placeholder(R.drawable.ic_image_placeholder)
+                    error(R.drawable.ic_broken_image)
+                }
+            ),
+            contentDescription = "Company Logo",
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(200.dp)
+                .clip(RoundedCornerShape(8.dp)),
+            contentScale = ContentScale.Crop
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "Description:", style = MaterialTheme.typography.titleSmall)
+        Text(text = opportunity.description, style = MaterialTheme.typography.bodyMedium)
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(text = "Apply Here:", style = MaterialTheme.typography.titleSmall)
+        Text(
+            text = opportunity.applyLink,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.primary,
+            modifier = Modifier
+                .clickable {
+                    // Handle apply link click (e.g., open in browser)
+                }
+        )
+    }
+}

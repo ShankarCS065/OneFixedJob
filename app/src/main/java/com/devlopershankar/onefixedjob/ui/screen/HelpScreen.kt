@@ -1,3 +1,4 @@
+// HelpScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
 import androidx.compose.foundation.layout.*
@@ -8,7 +9,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack // Import the ArrowBack icon
+import androidx.compose.material.icons.filled.ArrowBack
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -16,11 +17,11 @@ fun HelpScreen(navController: NavController) {
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Help & FAQ") },
+                title = { Text("Help") },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack, // Use ArrowBack icon
+                            imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Back"
                         )
                     }
@@ -28,16 +29,13 @@ fun HelpScreen(navController: NavController) {
             )
         }
     ) { innerPadding ->
-        Column(
+        Box(
             modifier = Modifier
-                .padding(innerPadding)
                 .fillMaxSize()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(innerPadding),
+            contentAlignment = Alignment.Center
         ) {
-            Text("Welcome to the Help Screen!", style = MaterialTheme.typography.headlineSmall)
-            // Add your help/FAQ UI here
+            Text(text = "Help Content Goes Here", style = MaterialTheme.typography.headlineMedium)
         }
     }
 }
