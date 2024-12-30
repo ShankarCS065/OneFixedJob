@@ -110,7 +110,8 @@ class MainActivity : ComponentActivity() {
                                             drawerState.open()
                                         }
                                     },
-                                    userProfileViewModel = userProfileViewModel
+                                    userProfileViewModel = userProfileViewModel,
+                                   opportunityViewModel = opportunityViewModel // Pass OpportunityViewModel here
                                 )
                             }
 
@@ -167,16 +168,29 @@ class MainActivity : ComponentActivity() {
                             composable(Screens.NotificationScreen) {
                                 NotificationScreen(navController)
                             }
+                            composable(Screens.ChatCreationScreen) {
+                                ChatCreationScreen(navController)
+                            }
                             composable(Screens.HelpScreen) {
                                 HelpScreen(navController)
                             }
 
                             // Newly Added CourseScreen and PracticeScreen
                             composable(Screens.CourseScreen) {
-                                CourseScreen(navController)
+                                val isAdmin by userProfileViewModel.isAdmin.collectAsState()
+                                CourseScreen(
+                                    navController = navController,
+                                    isAdmin = isAdmin,
+                                    viewModel = opportunityViewModel
+                                )
                             }
                             composable(Screens.PracticeScreen) {
-                                PracticeScreen(navController)
+                                val isAdmin by userProfileViewModel.isAdmin.collectAsState()
+                                PracticeScreen(
+                                    navController = navController,
+                                    isAdmin = isAdmin,
+                                    viewModel = opportunityViewModel
+                                )
                             }
 
                             // Detail screens
