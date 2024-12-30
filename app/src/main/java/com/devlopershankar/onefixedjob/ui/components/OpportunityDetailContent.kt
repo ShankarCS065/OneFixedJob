@@ -28,12 +28,30 @@ fun OpportunityDetailContent(opportunity: Opportunity) {
 
     Column(
         modifier = Modifier
-            .fillMaxWidth()
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+            .fillMaxSize() // Ensure the column takes up available space
+            .padding(top = 2.dp, start = 16.dp, end = 16.dp) // Added top padding and horizontal padding
     ) {
-        Text(text = opportunity.roleName, style = MaterialTheme.typography.headlineMedium)
-        Text(text = "Company: ${opportunity.companyName}", style = MaterialTheme.typography.titleMedium)
+        Text(
+            text = "Company: ${opportunity.companyName}",
+            style = MaterialTheme.typography.headlineMedium
+        )
+        Text(
+            text = "Role: ${opportunity.roleName}",
+            style = MaterialTheme.typography.titleMedium
+        )
+        Text(
+            text = "JobType: ${opportunity.jobType}",
+            style = MaterialTheme.typography.titleSmall
+        )
+
+        // Display Batch
+        if (opportunity.batch.isNotBlank()) {
+            Text(
+                text = "Batch: ${opportunity.batch}",
+                style = MaterialTheme.typography.titleSmall
+            )
+        }
+
         Spacer(modifier = Modifier.height(8.dp))
         Image(
             painter = rememberImagePainter(
@@ -82,6 +100,21 @@ fun OpportunityDetailContent(opportunity: Opportunity) {
                         context.startActivity(intent)
                     }
             )
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Apply Button in Detail View
+        Button(
+            onClick = {
+                if (opportunity.applyLink.isNotBlank()) {
+                    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(opportunity.applyLink))
+                    context.startActivity(intent)
+                }
+            },
+            modifier = Modifier.align(Alignment.End)
+        ) {
+            Text(text = "Apply")
         }
     }
 }

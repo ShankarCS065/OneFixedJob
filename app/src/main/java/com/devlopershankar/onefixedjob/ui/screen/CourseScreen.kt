@@ -208,7 +208,8 @@ fun CourseScreen(
                                         isEditMode = true
                                         showDialog = true
                                     }
-                                }
+                                },
+                                isAdmin = isAdmin
                             )
                         }
                     }

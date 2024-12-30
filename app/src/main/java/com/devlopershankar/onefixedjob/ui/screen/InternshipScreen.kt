@@ -324,7 +324,8 @@ fun InternshipScreen(
                                         isEditMode = true
                                         showDialog = true
                                     }
-                                }
+                                },
+                                isAdmin = isAdmin
                             )
                         }
                     }

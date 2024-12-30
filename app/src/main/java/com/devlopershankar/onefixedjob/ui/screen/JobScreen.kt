@@ -298,7 +298,8 @@ fun JobScreen(
                                     if (isAdmin) {
                                         navController.navigate(Screens.editOpportunity(job.id))
                                     }
-                                }
+                                },
+                                isAdmin = isAdmin
                             )
                         }
                     }

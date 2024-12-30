@@ -209,7 +209,8 @@ fun PracticeScreen(
                                         isEditMode = true
                                         showDialog = true
                                     }
-                                }
+                                },
+                                isAdmin = isAdmin
                             )
                         }
                     }
