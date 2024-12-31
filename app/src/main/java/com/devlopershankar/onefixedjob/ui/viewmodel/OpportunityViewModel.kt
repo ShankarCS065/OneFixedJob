@@ -1,527 +1,189 @@
-//// OpportunityViewModel.kt
-//package com.devlopershankar.onefixedjob.ui.viewmodel
-//
-//import androidx.lifecycle.ViewModel
-//import androidx.lifecycle.viewModelScope
-//import com.devlopershankar.onefixedjob.ui.model.Opportunity
-//import com.google.firebase.firestore.FirebaseFirestore
-//import com.google.firebase.firestore.ListenerRegistration
-//import kotlinx.coroutines.flow.*
-//import kotlinx.coroutines.launch
-//import kotlinx.coroutines.tasks.await
-//
-//class OpportunityViewModel : ViewModel() {
-//
-//    // Firestore instance
-//    private val firestore = FirebaseFirestore.getInstance()
-//    private val opportunitiesCollection = firestore.collection("opportunities")
-//
-//    // StateFlow for recommended jobs
-//    private val _recommendedJobs = MutableStateFlow<List<Opportunity>>(emptyList())
-//    val recommendedJobs: StateFlow<List<Opportunity>> = _recommendedJobs.asStateFlow()
-//
-//    // StateFlow for recommended internships
-//    private val _recommendedInternships = MutableStateFlow<List<Opportunity>>(emptyList())
-//    val recommendedInternships: StateFlow<List<Opportunity>> = _recommendedInternships.asStateFlow()
-//
-//    // StateFlow for recommended courses
-//    private val _recommendedCourses = MutableStateFlow<List<Opportunity>>(emptyList())
-//    val recommendedCourses: StateFlow<List<Opportunity>> = _recommendedCourses.asStateFlow()
-//
-//    // StateFlow for recommended practices (optional)
-//    private val _recommendedPractices = MutableStateFlow<List<Opportunity>>(emptyList())
-//    val recommendedPractices: StateFlow<List<Opportunity>> = _recommendedPractices.asStateFlow()
-//
-//    // StateFlow for loading state
-//    private val _isLoading = MutableStateFlow(false)
-//    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
-//
-//    // StateFlow for error messages
-//    private val _error = MutableStateFlow<String?>(null)
-//    val error: StateFlow<String?> = _error.asStateFlow()
-//
-//    // SharedFlow for UI events
-//    private val _eventFlow = MutableSharedFlow<UiEvent>()
-//    val eventFlow: SharedFlow<UiEvent> = _eventFlow.asSharedFlow()
-//
-//    // Listener registrations to manage listeners
-//    private var jobListener: ListenerRegistration? = null
-//    private var internshipListener: ListenerRegistration? = null
-//    private var courseListener: ListenerRegistration? = null
-//    private var practiceListener: ListenerRegistration? = null
-//
-//    init {
-//        // Initialize fetching recommended opportunities
-//        fetchRecommendedOpportunities()
-//    }
-//
-//    private fun fetchRecommendedOpportunities() {
-//        _isLoading.value = true
-//
-//        // Fetch recommended jobs
-//        jobListener = opportunitiesCollection
-//            .whereEqualTo("type", "Job")
-//            .whereEqualTo("isRecommended", true)
-//            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-//            .limit(7)
-//            .addSnapshotListener { snapshot, error ->
-//                if (error != null) {
-//                    viewModelScope.launch {
-//                        _eventFlow.emit(UiEvent.ShowError("Failed to load recommended jobs: ${error.message}"))
-//                    }
-//                    return@addSnapshotListener
-//                }
-//
-//                val jobsList = snapshot?.documents?.mapNotNull { doc ->
-//                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-//                } ?: emptyList()
-//                _recommendedJobs.value = jobsList
-//                _isLoading.value = false
-//            }
-//
-//        // Fetch recommended internships
-//        internshipListener = opportunitiesCollection
-//            .whereEqualTo("type", "Internship")
-//            .whereEqualTo("isRecommended", true)
-//            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-//            .limit(7)
-//            .addSnapshotListener { snapshot, error ->
-//                if (error != null) {
-//                    viewModelScope.launch {
-//                        _eventFlow.emit(UiEvent.ShowError("Failed to load recommended internships: ${error.message}"))
-//                    }
-//                    return@addSnapshotListener
-//                }
-//
-//                val internshipsList = snapshot?.documents?.mapNotNull { doc ->
-//                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-//                } ?: emptyList()
-//                _recommendedInternships.value = internshipsList
-//                _isLoading.value = false
-//            }
-//
-//        // Fetch recommended courses
-//        courseListener = opportunitiesCollection
-//            .whereEqualTo("type", "Course")
-//            .whereEqualTo("isRecommended", true)
-//            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-//            .limit(7)
-//            .addSnapshotListener { snapshot, error ->
-//                if (error != null) {
-//                    viewModelScope.launch {
-//                        _eventFlow.emit(UiEvent.ShowError("Failed to load recommended courses: ${error.message}"))
-//                    }
-//                    return@addSnapshotListener
-//                }
-//
-//                val coursesList = snapshot?.documents?.mapNotNull { doc ->
-//                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-//                } ?: emptyList()
-//                _recommendedCourses.value = coursesList
-//                _isLoading.value = false
-//            }
-//
-//        // Optionally, fetch recommended practices
-//        /*
-//        practiceListener = opportunitiesCollection
-//            .whereEqualTo("type", "Practice")
-//            .whereEqualTo("isRecommended", true)
-//            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-//            .limit(7)
-//            .addSnapshotListener { snapshot, error ->
-//                if (error != null) {
-//                    viewModelScope.launch {
-//                        _eventFlow.emit(UiEvent.ShowError("Failed to load recommended practices: ${error.message}"))
-//                    }
-//                    return@addSnapshotListener
-//                }
-//
-//                val practicesList = snapshot?.documents?.mapNotNull { doc ->
-//                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-//                } ?: emptyList()
-//                _recommendedPractices.value = practicesList
-//                _isLoading.value = false
-//            }
-//        */
-//    }
-//
-//    // Clean up listeners when ViewModel is cleared
-//    override fun onCleared() {
-//        super.onCleared()
-//        jobListener?.remove()
-//        internshipListener?.remove()
-//        courseListener?.remove()
-//        practiceListener?.remove()
-//    }
-//
-//    // Function to add a new opportunity
-//    fun addOpportunity(
-//        opportunity: Opportunity,
-//        onSuccess: () -> Unit,
-//        onFailure: (String) -> Unit
-//    ) {
-//        viewModelScope.launch {
-//            try {
-//                opportunitiesCollection.add(opportunity).await()
-//                _eventFlow.emit(UiEvent.AddSuccess)
-//                onSuccess()
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//                _eventFlow.emit(UiEvent.ShowError("Failed to add opportunity: ${e.message}"))
-//                onFailure(e.message ?: "Unknown error")
-//            }
-//        }
-//    }
-//
-//    // Function to update an existing opportunity
-//    fun updateOpportunity(
-//        opportunity: Opportunity,
-//        onSuccess: () -> Unit,
-//        onFailure: (String) -> Unit
-//    ) {
-//        viewModelScope.launch {
-//            try {
-//                opportunitiesCollection.document(opportunity.id).set(opportunity).await()
-//                _eventFlow.emit(UiEvent.UpdateSuccess)
-//                onSuccess()
-//            } catch (e: Exception) {
-//                e.printStackTrace()
-//                _eventFlow.emit(UiEvent.ShowError("Failed to update opportunity: ${e.message}"))
-//                onFailure(e.message ?: "Unknown error")
-//            }
-//        }
-//    }
-//
-//    // Function to fetch a single opportunity by ID
-//    suspend fun getOpportunityById(opportunityId: String): Opportunity? {
-//        return try {
-//            val doc = opportunitiesCollection.document(opportunityId).get().await()
-//            doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-//        } catch (e: Exception) {
-//            e.printStackTrace()
-//            null
-//        }
-//    }
-//
-//    // Sealed class for UI events
-//    sealed class UiEvent {
-//        data class ShowToast(val message: String) : UiEvent()
-//        data class ShowError(val message: String) : UiEvent()
-//        object AddSuccess : UiEvent()
-//        object UpdateSuccess : UiEvent()
-//        // Add more events as needed
-//    }
-//}
-
-
 // OpportunityViewModel.kt
 package com.devlopershankar.onefixedjob.ui.viewmodel
 
+import android.net.Uri
+import android.util.Log
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.devlopershankar.onefixedjob.ui.model.Opportunity
 import com.devlopershankar.onefixedjob.ui.repository.OpportunityRepository
-import com.google.firebase.firestore.FirebaseFirestore
-import com.google.firebase.firestore.ListenerRegistration
-import kotlinx.coroutines.flow.*
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.launch
 
 class OpportunityViewModel(
     private val repository: OpportunityRepository = OpportunityRepository()
 ) : ViewModel() {
 
-    // StateFlows for all opportunities
-    private val _allJobs = MutableStateFlow<List<Opportunity>>(emptyList())
-    val allJobs: StateFlow<List<Opportunity>> = _allJobs.asStateFlow()
+    private val TAG = "OpportunityViewModel"
 
-    private val _allInternships = MutableStateFlow<List<Opportunity>>(emptyList())
-    val allInternships: StateFlow<List<Opportunity>> = _allInternships.asStateFlow()
-
-    private val _allCourses = MutableStateFlow<List<Opportunity>>(emptyList())
-    val allCourses: StateFlow<List<Opportunity>> = _allCourses.asStateFlow()
-
-    private val _allPractices = MutableStateFlow<List<Opportunity>>(emptyList())
-    val allPractices: StateFlow<List<Opportunity>> = _allPractices.asStateFlow()
-
-    // StateFlows for recommended opportunities
+    // StateFlows for different types of opportunities
     private val _recommendedJobs = MutableStateFlow<List<Opportunity>>(emptyList())
-    val recommendedJobs: StateFlow<List<Opportunity>> = _recommendedJobs.asStateFlow()
+    val recommendedJobs: StateFlow<List<Opportunity>> = _recommendedJobs
 
     private val _recommendedInternships = MutableStateFlow<List<Opportunity>>(emptyList())
-    val recommendedInternships: StateFlow<List<Opportunity>> = _recommendedInternships.asStateFlow()
+    val recommendedInternships: StateFlow<List<Opportunity>> = _recommendedInternships
 
     private val _recommendedCourses = MutableStateFlow<List<Opportunity>>(emptyList())
-    val recommendedCourses: StateFlow<List<Opportunity>> = _recommendedCourses.asStateFlow()
+    val recommendedCourses: StateFlow<List<Opportunity>> = _recommendedCourses
 
     private val _recommendedPractices = MutableStateFlow<List<Opportunity>>(emptyList())
-    val recommendedPractices: StateFlow<List<Opportunity>> = _recommendedPractices.asStateFlow()
+    val recommendedPractices: StateFlow<List<Opportunity>> = _recommendedPractices
 
-    // StateFlow for loading and error states
+    // General loading and error states
     private val _isLoading = MutableStateFlow(false)
-    val isLoading: StateFlow<Boolean> = _isLoading.asStateFlow()
+    val isLoading: StateFlow<Boolean> = _isLoading
 
     private val _error = MutableStateFlow<String?>(null)
-    val error: StateFlow<String?> = _error.asStateFlow()
+    val error: StateFlow<String?> = _error
 
-    // SharedFlow for UI events
+    // Event Flow for UI Events like Snackbars
     private val _eventFlow = MutableSharedFlow<UiEvent>()
-    val eventFlow: SharedFlow<UiEvent> = _eventFlow.asSharedFlow()
-
-    // Listener registrations
-    private var jobListener: ListenerRegistration? = null
-    private var internshipListener: ListenerRegistration? = null
-    private var courseListener: ListenerRegistration? = null
-    private var practiceListener: ListenerRegistration? = null
-
-    // Flags to track completion
-    private var isJobsLoaded = false
-    private var isInternshipsLoaded = false
-    private var isCoursesLoaded = false
-    private var isPracticesLoaded = false
+    val eventFlow: SharedFlow<UiEvent> = _eventFlow
 
     init {
-        fetchAllOpportunities()
+        Log.d(TAG, "ViewModel initialized. Fetching opportunities.")
         fetchRecommendedOpportunities()
     }
 
-    private fun fetchAllOpportunities() {
-        // Fetch all Jobs
-        jobListener = FirebaseFirestore.getInstance().collection("opportunities")
-            .whereEqualTo("type", "Job")
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    viewModelScope.launch {
-                        _eventFlow.emit(UiEvent.ShowError("Failed to load jobs: ${error.message}"))
-                    }
-                    return@addSnapshotListener
-                }
-
-                val jobsList = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-                } ?: emptyList()
-                _allJobs.value = jobsList
-            }
-
-        // Fetch all Internships
-        internshipListener = FirebaseFirestore.getInstance().collection("opportunities")
-            .whereEqualTo("type", "Internship")
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    viewModelScope.launch {
-                        _eventFlow.emit(UiEvent.ShowError("Failed to load internships: ${error.message}"))
-                    }
-                    return@addSnapshotListener
-                }
-
-                val internshipsList = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-                } ?: emptyList()
-                _allInternships.value = internshipsList
-            }
-
-        // Fetch all Courses
-        courseListener = FirebaseFirestore.getInstance().collection("opportunities")
-            .whereEqualTo("type", "Course")
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    viewModelScope.launch {
-                        _eventFlow.emit(UiEvent.ShowError("Failed to load courses: ${error.message}"))
-                    }
-                    return@addSnapshotListener
-                }
-
-                val coursesList = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-                } ?: emptyList()
-                _allCourses.value = coursesList
-            }
-
-        // Fetch all Practices
-        practiceListener = FirebaseFirestore.getInstance().collection("opportunities")
-            .whereEqualTo("type", "Practice")
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    viewModelScope.launch {
-                        _eventFlow.emit(UiEvent.ShowError("Failed to load practices: ${error.message}"))
-                    }
-                    return@addSnapshotListener
-                }
-
-                val practicesList = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-                } ?: emptyList()
-                _allPractices.value = practicesList
-            }
-    }
-
-    private fun fetchRecommendedOpportunities() {
-        _isLoading.value = true
-
-        // Fetch recommended jobs
-        jobListener = FirebaseFirestore.getInstance().collection("opportunities")
-            .whereEqualTo("type", "Job")
-            .whereEqualTo("isRecommended", true)
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(7)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    viewModelScope.launch {
-                        _eventFlow.emit(UiEvent.ShowError("Failed to load recommended jobs: ${error.message}"))
-                    }
-                    return@addSnapshotListener
-                }
-
-                val jobsList = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-                } ?: emptyList()
-                _recommendedJobs.value = jobsList
-
-                isJobsLoaded = true
-                checkLoadingComplete()
-            }
-
-        // Fetch recommended internships
-        internshipListener = FirebaseFirestore.getInstance().collection("opportunities")
-            .whereEqualTo("type", "Internship")
-            .whereEqualTo("isRecommended", true)
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(7)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    viewModelScope.launch {
-                        _eventFlow.emit(UiEvent.ShowError("Failed to load recommended internships: ${error.message}"))
-                    }
-                    return@addSnapshotListener
-                }
-
-                val internshipsList = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-                } ?: emptyList()
-                _recommendedInternships.value = internshipsList
-
-                isInternshipsLoaded = true
-                checkLoadingComplete()
-            }
-
-        // Fetch recommended courses
-        courseListener = FirebaseFirestore.getInstance().collection("opportunities")
-            .whereEqualTo("type", "Course")
-            .whereEqualTo("isRecommended", true)
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(7)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    viewModelScope.launch {
-                        _eventFlow.emit(UiEvent.ShowError("Failed to load recommended courses: ${error.message}"))
-                    }
-                    return@addSnapshotListener
-                }
-
-                val coursesList = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-                } ?: emptyList()
-                _recommendedCourses.value = coursesList
-
-                isCoursesLoaded = true
-                checkLoadingComplete()
-            }
-
-        // Fetch recommended practices (if needed)
-        practiceListener = FirebaseFirestore.getInstance().collection("opportunities")
-            .whereEqualTo("type", "Practice")
-            .whereEqualTo("isRecommended", true)
-            .orderBy("timestamp", com.google.firebase.firestore.Query.Direction.DESCENDING)
-            .limit(7)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    viewModelScope.launch {
-                        _eventFlow.emit(UiEvent.ShowError("Failed to load recommended practices: ${error.message}"))
-                    }
-                    return@addSnapshotListener
-                }
-
-                val practicesList = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Opportunity::class.java)?.copy(id = doc.id)
-                } ?: emptyList()
-                _recommendedPractices.value = practicesList
-
-                isPracticesLoaded = true
-                checkLoadingComplete()
-            }
-    }
-
-    private fun checkLoadingComplete() {
-        // Set isLoading to false once all recommended data is loaded
-        if (isJobsLoaded ||
-            isInternshipsLoaded ||
-            isCoursesLoaded ||
-            isPracticesLoaded
-        ) {
-            _isLoading.value = false
-        }
-    }
-
-    // Function to add a new opportunity
-    fun addOpportunity(
-        opportunity: Opportunity,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
+    /**
+     * Fetches recommended opportunities for all types.
+     */
+    fun fetchRecommendedOpportunities() {
         viewModelScope.launch {
+            Log.d(TAG, "Fetching recommended opportunities.")
+            _isLoading.value = true
+            _error.value = null
             try {
-                repository.addOpportunity(opportunity)
-                _eventFlow.emit(UiEvent.AddSuccess)
-                onSuccess()
+                val jobs = repository.getOpportunitiesByType("Job")
+                Log.d(TAG, "Fetched ${jobs.size} jobs.")
+                _recommendedJobs.value = jobs
+
+                val internships = repository.getOpportunitiesByType("Internship")
+                Log.d(TAG, "Fetched ${internships.size} internships.")
+                _recommendedInternships.value = internships
+
+                val courses = repository.getOpportunitiesByType("Course")
+                Log.d(TAG, "Fetched ${courses.size} courses.")
+                _recommendedCourses.value = courses
+
+                val practices = repository.getOpportunitiesByType("Practice")
+                Log.d(TAG, "Fetched ${practices.size} practices.")
+                _recommendedPractices.value = practices
             } catch (e: Exception) {
-                e.printStackTrace()
-                _eventFlow.emit(UiEvent.ShowError("Failed to add opportunity: ${e.message}"))
-                onFailure(e.message ?: "Unknown error")
+                Log.e(TAG, "Error fetching opportunities: ${e.localizedMessage}", e)
+                _error.value = e.localizedMessage ?: "An unexpected error occurred."
+                _eventFlow.emit(UiEvent.ShowError(e.localizedMessage ?: "An unexpected error occurred."))
+            } finally {
+                _isLoading.value = false
+                Log.d(TAG, "Loading state set to false.")
             }
         }
     }
 
-    // Function to update an existing opportunity
-    fun updateOpportunity(
-        opportunity: Opportunity,
-        onSuccess: () -> Unit,
-        onFailure: (String) -> Unit
-    ) {
+    /**
+     * Adds or updates an opportunity, handling validation and image uploading.
+     */
+    fun addOrUpdateOpportunity(opportunity: Opportunity, imageUri: Uri?, isEditMode: Boolean) {
         viewModelScope.launch {
+            Log.d(TAG, "addOrUpdateOpportunity called. isEditMode: $isEditMode")
+            _isLoading.value = true
+            _error.value = null
             try {
-                repository.updateOpportunity(opportunity)
-                _eventFlow.emit(UiEvent.UpdateSuccess)
-                onSuccess()
+                // Validate inputs
+                if (opportunity.companyName.isBlank() || opportunity.roleName.isBlank() || opportunity.applyLink.isBlank()) {
+                    Log.d(TAG, "Validation failed: Required fields are empty.")
+                    _eventFlow.emit(UiEvent.ShowError("Please fill in all required fields."))
+                    return@launch
+                }
+
+                if (!isValidUrl(opportunity.applyLink)) {
+                    Log.d(TAG, "Validation failed: Invalid Apply Link URL.")
+                    _eventFlow.emit(UiEvent.ShowError("Please enter a valid Apply Link URL."))
+                    return@launch
+                }
+
+                var finalOpportunity = opportunity
+
+                if (imageUri != null) {
+                    Log.d(TAG, "Uploading image.")
+                    try {
+                        val uploadedImageUrl = repository.uploadImage(imageUri)
+                        if (uploadedImageUrl != null) {
+                            Log.d(TAG, "Image uploaded successfully. URL: $uploadedImageUrl")
+                            finalOpportunity = opportunity.copy(imageUrl = uploadedImageUrl)
+                        } else {
+                            Log.d(TAG, "Image upload failed: Uploaded URL is null.")
+                            _eventFlow.emit(UiEvent.ShowError("Image upload failed."))
+                            return@launch
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Image upload failed: ${e.localizedMessage}", e)
+                        _eventFlow.emit(UiEvent.ShowError("Image upload failed: ${e.localizedMessage}"))
+                        return@launch
+                    }
+                }
+
+                if (isEditMode) {
+                    Log.d(TAG, "Updating opportunity with ID: ${finalOpportunity.id}")
+                    repository.updateOpportunity(finalOpportunity)
+                    _eventFlow.emit(UiEvent.UpdateSuccess)
+                    Log.d(TAG, "Opportunity updated successfully.")
+                } else {
+                    Log.d(TAG, "Adding new opportunity.")
+                    val generatedId = repository.addOpportunity(finalOpportunity)
+                    finalOpportunity = finalOpportunity.copy(id = generatedId)
+                    // Optionally, refresh the opportunities
+                    fetchRecommendedOpportunities()
+                    _eventFlow.emit(UiEvent.AddSuccess)
+                    Log.d(TAG, "Opportunity added successfully with ID: $generatedId")
+                }
+
             } catch (e: Exception) {
-                e.printStackTrace()
-                _eventFlow.emit(UiEvent.ShowError("Failed to update opportunity: ${e.message}"))
-                onFailure(e.message ?: "Unknown error")
+                Log.e(TAG, "Operation failed: ${e.localizedMessage}", e)
+                _eventFlow.emit(UiEvent.ShowError("Operation failed: ${e.localizedMessage}"))
+            } finally {
+                _isLoading.value = false
+                Log.d(TAG, "Loading state set to false.")
             }
         }
     }
 
-    // Function to fetch a single opportunity by ID
-    suspend fun getOpportunityById(opportunityId: String): Opportunity? {
-        return repository.getOpportunityById(opportunityId)
+    /**
+     * Fetches a single opportunity by ID.
+     */
+    suspend fun getOpportunityById(jobId: String): Opportunity? {
+        return try {
+            repository.getOpportunityById(jobId)
+        } catch (e: Exception) {
+            Log.e(TAG, "Error fetching opportunity by ID: $jobId", e)
+            null
+        }
     }
 
-    // Sealed class for UI events
+    /**
+     * UI Events for one-time actions like showing Snackbars.
+     */
     sealed class UiEvent {
         data class ShowToast(val message: String) : UiEvent()
         data class ShowError(val message: String) : UiEvent()
         object AddSuccess : UiEvent()
         object UpdateSuccess : UiEvent()
-        // Add more events as needed
     }
 
-    override fun onCleared() {
-        super.onCleared()
-        jobListener?.remove()
-        internshipListener?.remove()
-        courseListener?.remove()
-        practiceListener?.remove()
+    /**
+     * Utility function to validate URLs.
+     */
+    fun isValidUrl(url: String): Boolean {
+        return android.util.Patterns.WEB_URL.matcher(url).matches()
+    }
+
+    /**
+     * Function to upload image, returns the URL
+     */
+    suspend fun uploadImage(uri: Uri): String? {
+        return repository.uploadImage(uri)
     }
 }

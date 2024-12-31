@@ -4,7 +4,7 @@ package com.devlopershankar.onefixedjob.ui.model
 import com.google.firebase.Timestamp
 
 data class Opportunity(
-    val id: String = "",
+    val id: String = "", // Firestore Document ID
     val type: String = "Job", // "Job", "Internship", "Course", "Practice"
     val companyName: String = "",
     val roleName: String = "",

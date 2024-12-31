@@ -55,6 +55,11 @@ class UserProfileViewModel : ViewModel() {
     init {
         observeAuthState()
     }
+    init {
+        Log.d(TAG, "Fetching user profile.")
+        fetchUserProfile()
+    }
+
 
     private fun observeAuthState() {
         authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
@@ -111,40 +116,44 @@ class UserProfileViewModel : ViewModel() {
      */
     private fun fetchUserProfile() {
         viewModelScope.launch {
-            try {
-                _isLoading.value = true
+            val currentUser = auth.currentUser
+            if (currentUser != null) {
+                Log.d(TAG, "User signed in: ${currentUser.uid}")
+                try {
+                    Log.d(TAG, "Fetching user profile for userId: ${currentUser.uid}")
+                    val documentSnapshot = firestore.collection("users")
+                        .document(currentUser.uid)
+                        .get()
+                        .await()
 
-                val currentUser = auth.currentUser
-                    ?: throw Exception("User not authenticated")
-
-                Log.d(TAG, "Fetching user profile for userId: ${currentUser.uid}")
-
-                // Fetch the user document from Firestore
-                firestore.collection("users").document(currentUser.uid).get().await().let { document ->
-                    if (document.exists()) {
+                    if (documentSnapshot.exists()) {
+                        val profile = documentSnapshot.toObject(UserProfile::class.java)
                         Log.d(TAG, "User document exists. Parsing data.")
-                        val userProfileData = document.toObject(UserProfile::class.java)
-                            ?: throw Exception("Failed to parse user profile data")
-                        _userProfile.value = userProfileData
-                        Log.d(TAG, "User profile fetched successfully: $userProfileData")
+                        _userProfile.value = profile
+                       // _isAdmin.value = profile?.isAdmin ?: false
+                        Log.d(TAG, "User profile fetched successfully: $profile")
                     } else {
-                        Log.d(TAG, "User document does not exist. Initializing profile.")
-                        // Initialize user profile if document doesn't exist
-                        initializeUserProfile(currentUser.uid)
+                        Log.d(TAG, "User document does not exist.")
+                        _userProfile.value = null
+                        _isAdmin.value = false
                     }
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error fetching user profile: ${e.localizedMessage}", e)
+                    _userProfile.value = null
+                    _isAdmin.value = false
+                } finally {
+                    _isLoading.value = false
+                    Log.d(TAG, "Loading state set to false.")
                 }
-
-            } catch (e: Exception) {
-                Log.e(TAG, "Error fetching user profile: ${e.message}", e)
-                _eventFlow.emit(UiEvent.ShowError("Failed to fetch profile: ${e.message}"))
-            } finally {
+            } else {
+                Log.d(TAG, "No user is signed in.")
+                _userProfile.value = null
+                _isAdmin.value = false
                 _isLoading.value = false
-                Log.d(TAG, "Loading state set to false.")
             }
         }
     }
-
-    /**
+        /**
      * Method to initialize user profile in Firestore.
      */
     private suspend fun initializeUserProfile(userId: String) {

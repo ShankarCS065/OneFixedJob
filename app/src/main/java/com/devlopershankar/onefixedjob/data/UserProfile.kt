@@ -1,6 +1,8 @@
 // UserProfile.kt
 package com.devlopershankar.onefixedjob.data
 
+import com.google.firebase.Timestamp
+
 data class UserProfile(
     val fullName: String = "",
     val email: String = "",
@@ -17,5 +19,5 @@ data class UserProfile(
     val passOutYear: String = "",
     val profileImageUrl: String = "",
     val resumeUrl: String = "",
-    val resumeFilename: String = ""
+    val resumeFilename: String = "",
 )

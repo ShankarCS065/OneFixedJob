@@ -14,6 +14,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavType
 import androidx.navigation.compose.*
 import androidx.navigation.navArgument
+import coil.Coil
+import coil.ImageLoader
 import com.devlopershankar.onefixedjob.navigation.Screens
 import com.devlopershankar.onefixedjob.ui.screen.*
 import com.devlopershankar.onefixedjob.ui.theme.OneFixedJobTheme
@@ -28,6 +30,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         FirebaseApp.initializeApp(this)
+        Coil.setImageLoader(ImageLoader.Builder(this)
+            .crossfade(true)
+            .build())
         setContent {
             OneFixedJobTheme { // Apply your custom theme
                 Surface(color = MaterialTheme.colorScheme.background) {

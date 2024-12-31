@@ -1,8 +1,9 @@
 // InternshipDetailScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
-import com.devlopershankar.onefixedjob.ui.model.Opportunity
 import androidx.compose.foundation.layout.*
+import com.devlopershankar.onefixedjob.ui.components.OpportunityDetailContent
+import com.devlopershankar.onefixedjob.ui.model.Opportunity
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
@@ -13,7 +14,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import com.devlopershankar.onefixedjob.ui.viewmodel.OpportunityViewModel
-import com.devlopershankar.onefixedjob.ui.components.OpportunityDetailContent
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -26,7 +27,7 @@ fun InternshipDetailScreen(navController: NavController, internshipId: String?) 
     LaunchedEffect(internshipId) {
         if (!internshipId.isNullOrEmpty()) {
             val fetchedOpportunity = opportunityViewModel.getOpportunityById(internshipId)
-            if (fetchedOpportunity != null) {
+            if (fetchedOpportunity != null && fetchedOpportunity.type == "Internship") {
                 opportunity = fetchedOpportunity
             } else {
                 errorMessage = "Internship not found."
@@ -45,7 +46,7 @@ fun InternshipDetailScreen(navController: NavController, internshipId: String?) 
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
-                            imageVector = Icons.Filled.ArrowBack,
+                            imageVector = Icons.Default.ArrowBack,
                             contentDescription = "Back"
                         )
                     }

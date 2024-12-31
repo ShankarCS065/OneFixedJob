@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -21,6 +20,9 @@ import com.devlopershankar.onefixedjob.R
 import com.devlopershankar.onefixedjob.ui.viewmodel.OpportunityViewModel
 import com.devlopershankar.onefixedjob.ui.viewmodel.UserProfileViewModel
 import kotlinx.coroutines.launch
+import android.util.Log
+import androidx.compose.foundation.shape.RoundedCornerShape
+import com.devlopershankar.onefixedjob.ui.model.Opportunity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -148,14 +150,21 @@ fun DashboardScreen(
         Box(modifier = Modifier.fillMaxSize()) {
 
             if (isLoading) {
-
                 CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
             } else if (error != null) {
-                Text(
-                    text = error ?: "An unknown error occurred.",
-                    color = MaterialTheme.colorScheme.error,
-                    modifier = Modifier.align(Alignment.Center)
-                )
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(16.dp),
+                    verticalArrangement = Arrangement.Center,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(text = error ?: "An unknown error occurred.", color = MaterialTheme.colorScheme.error)
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Button(onClick = { opportunityViewModel.fetchRecommendedOpportunities() }) {
+                        Text(text = "Retry")
+                    }
+                }
             } else {
                 LazyColumn(
                     modifier = Modifier
@@ -198,149 +207,117 @@ fun DashboardScreen(
                         }
                     }
 
-                    // 2) A 2×2 grid of quick actions
+                    // 2) Quick Actions Grid
                     item {
                         TwoByTwoGrid(
                             quickActions = quickActions,
-                            navController = navController,
-                            isAdmin = isAdmin,
-                            viewModel = opportunityViewModel
+                            navController = navController
                         )
                     }
 
-                    // 3) Recommended Jobs
-                    if (recommendedJobs.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Recommended Jobs(7)",
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                        }
-                        item {
-                            LazyRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) {
-                                items(recommendedJobs) { job ->
-                                    JobCardHorizontal(
-                                        opportunity = job,
-                                        navController = navController,
-                                        onEdit = {
-                                            if (isAdmin) {
-                                                navController.navigate(Screens.editOpportunity(job.id))
-                                            }
-                                        },
-                                        isAdmin = isAdmin
-                                    )
-                                }
-                            }
-                        }
+                    // 3) Recommended Opportunities Sections
+                    item {
+                        RecommendedOpportunitiesSection(
+                            title = "Recommended Jobs",
+                            opportunities = recommendedJobs,
+                            navController = navController,
+                            isAdmin = isAdmin
+                        )
                     }
 
-                    // 4) Recommended Internships
-                    if (recommendedInternships.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Recommended Internships(7)",
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                        }
-                        item {
-                            LazyRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) {
-                                items(recommendedInternships) { internship ->
-                                    JobCardHorizontal(
-                                        opportunity = internship,
-                                        navController = navController,
-                                        onEdit = {
-                                            if (isAdmin) {
-                                                navController.navigate(Screens.editOpportunity(internship.id))
-                                            }
-                                        },
-                                        isAdmin = isAdmin
-                                    )
-                                }
-                            }
-                        }
+                    item {
+                        RecommendedOpportunitiesSection(
+                            title = "Recommended Internships",
+                            opportunities = recommendedInternships,
+                            navController = navController,
+                            isAdmin = isAdmin
+                        )
                     }
 
-                    // 5) Recommended Courses
-                    if (recommendedCourses.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Recommended Courses(7)",
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                        }
-                        item {
-                            LazyRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) {
-                                items(recommendedCourses) { course ->
-                                    JobCardHorizontal(
-                                        opportunity = course,
-                                        navController = navController,
-                                        onEdit = {
-                                            if (isAdmin) {
-                                                navController.navigate(Screens.editOpportunity(course.id))
-                                            }
-                                        },
-                                        isAdmin = isAdmin
-                                    )
-                                }
-                            }
-                        }
+                    item {
+                        RecommendedOpportunitiesSection(
+                            title = "Recommended Courses",
+                            opportunities = recommendedCourses,
+                            navController = navController,
+                            isAdmin = isAdmin
+                        )
                     }
 
-                    // 6) Recommended Practices (Optional)
-                    if (recommendedPractices.isNotEmpty()) {
-                        item {
-                            Text(
-                                text = "Recommended Practices(7)",
-                                style = MaterialTheme.typography.titleMedium,
-                                modifier = Modifier.padding(horizontal = 16.dp)
-                            )
-                        }
-                        item {
-                            LazyRow(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 8.dp),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                contentPadding = PaddingValues(horizontal = 16.dp)
-                            ) {
-                                items(recommendedPractices) { practice ->
-                                    JobCardHorizontal(
-                                        opportunity = practice,
-                                        navController = navController,
-                                        onEdit = {
-                                            if (isAdmin) {
-                                                navController.navigate(Screens.editOpportunity(practice.id))
-                                            }
-                                        },
-                                        isAdmin = isAdmin
-                                    )
-                                }
-                            }
-                        }
+                    item {
+                        RecommendedOpportunitiesSection(
+                            title = "Recommended Practices",
+                            opportunities = recommendedPractices,
+                            navController = navController,
+                            isAdmin = isAdmin
+                        )
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun RecommendedOpportunitiesSection(
+    title: String,
+    opportunities: List<Opportunity>,
+    navController: NavController,
+    isAdmin: Boolean
+) {
+    Column(modifier = Modifier.fillMaxWidth()) {
+        if (opportunities.isNotEmpty()) {
+            Text(
+                text = "$title (${opportunities.size})",
+                style = MaterialTheme.typography.titleMedium,
+                modifier = Modifier.padding(horizontal = 16.dp)
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            LazyRow(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                contentPadding = PaddingValues(horizontal = 16.dp)
+            ) {
+                items(opportunities) { opportunity ->
+                    JobCardHorizontal(
+                        opportunity = opportunity,
+                        navController = navController,
+                        onEdit = {
+                            if (isAdmin) {
+                                navController.navigate(Screens.editOpportunity(opportunity.id))
+                            }
+                        },
+                        isAdmin = isAdmin
+                    )
+                }
+            }
+
+            if (isAdmin) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.End
+                ) {
+                    Button(
+                        onClick = {
+                            // Extract the type from the title, e.g., "Recommended Jobs" -> "Job"
+                            val type = title.removePrefix("Recommended ").removeSuffix("s")
+                            navController.navigate("create_opportunity?type=$type")
+                        }
+                    ) {
+                        Text(text = "Create ${title.removePrefix("Recommended ")}")
+                    }
+                }
+            }
+        } else {
+            // Optionally, show a message if there are no recommended opportunities
+            Text(
+                text = "No recommended opportunities available.",
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.padding(16.dp)
+            )
         }
     }
 }
