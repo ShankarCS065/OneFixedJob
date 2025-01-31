@@ -1,4 +1,3 @@
-// UserProfileViewModel.kt
 package com.devlopershankar.onefixedjob.ui.viewmodel
 
 import android.net.Uri
@@ -14,7 +13,6 @@ import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
@@ -34,7 +32,7 @@ class UserProfileViewModel : ViewModel() {
     private val _isLoading = MutableStateFlow(false)
     val isLoading: StateFlow<Boolean> = _isLoading
 
-    // Admin State via Firestore 'isAdmin' field
+    // Admin State (if you want to differentiate admin vs. normal user)
     private val _isAdmin = MutableStateFlow(false)
     val isAdmin: StateFlow<Boolean> = _isAdmin
 
@@ -52,51 +50,59 @@ class UserProfileViewModel : ViewModel() {
 
     private var authStateListener: FirebaseAuth.AuthStateListener? = null
 
-    init {
-        observeAuthState()
+    companion object {
+        private const val TAG = "UserProfileViewModel"
     }
+
     init {
-        Log.d(TAG, "Fetching user profile.")
+        // Observe Firebase Auth state changes
+        observeAuthState()
+        // Fetch user profile if someone is signed in
         fetchUserProfile()
     }
 
-
+    /**
+     * Observes Auth state changes.
+     * If user == null (no user logged in), we DO NOT emit LogoutSuccess automatically.
+     */
     private fun observeAuthState() {
         authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             val user = firebaseAuth.currentUser
             if (user != null) {
-                // User is signed in
                 Log.d(TAG, "User signed in: ${user.uid}")
                 fetchUserAdminStatus()
                 fetchUserProfile()
             } else {
-                // User is signed out
+                // No user is logged in (e.g., first app open or user manually logged out)
                 _userProfile.value = null
                 _isAdmin.value = false
-                Log.d(TAG, "User signed out.")
-                viewModelScope.launch {
-                    _eventFlow.emit(UiEvent.LogoutSuccess)
-                }
+                Log.d(TAG, "No user is logged in.")
+                // IMPORTANT: we do NOT emit UiEvent.LogoutSuccess here anymore
             }
         }
         auth.addAuthStateListener(authStateListener!!)
     }
 
+    /**
+     * Fetches whether the current user is an admin, if doc is found.
+     * If the doc doesn't exist (new user), we skip the "User profile not found" error.
+     */
     private fun fetchUserAdminStatus() {
         val currentUser = auth.currentUser
         if (currentUser != null) {
             viewModelScope.launch {
                 try {
-                    // Fetch the user document from Firestore
-                    val userDoc = firestore.collection("users").document(currentUser.uid).get().await()
+                    val userDoc = firestore.collection("users")
+                        .document(currentUser.uid)
+                        .get()
+                        .await()
                     if (userDoc.exists()) {
                         val adminStatus = userDoc.getBoolean("isAdmin") ?: false
                         _isAdmin.value = adminStatus
-                        Log.d(TAG, "User ${currentUser.uid} isAdmin = $adminStatus")
                     } else {
-                        Log.d(TAG, "User document does not exist for UID: ${currentUser.uid}")
+                        // The document doesn't exist yet (new user).
                         _isAdmin.value = false
-                        _eventFlow.emit(UiEvent.ShowError("User profile not found."))
+                        // We do NOT emit "User profile not found."
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()
@@ -105,22 +111,19 @@ class UserProfileViewModel : ViewModel() {
                 }
             }
         } else {
-            // User not logged in
             _isAdmin.value = false
-            Log.d(TAG, "No user is logged in.")
         }
     }
 
     /**
-     * Method to fetch user profile data from Firestore.
+     * Fetches the current user's profile from Firestore (if it exists).
+     * If no doc, we do not treat it as an error — we just keep profile = null.
      */
     private fun fetchUserProfile() {
         viewModelScope.launch {
             val currentUser = auth.currentUser
             if (currentUser != null) {
-                Log.d(TAG, "User signed in: ${currentUser.uid}")
                 try {
-                    Log.d(TAG, "Fetching user profile for userId: ${currentUser.uid}")
                     val documentSnapshot = firestore.collection("users")
                         .document(currentUser.uid)
                         .get()
@@ -128,12 +131,9 @@ class UserProfileViewModel : ViewModel() {
 
                     if (documentSnapshot.exists()) {
                         val profile = documentSnapshot.toObject(UserProfile::class.java)
-                        Log.d(TAG, "User document exists. Parsing data.")
                         _userProfile.value = profile
-                       // _isAdmin.value = profile?.isAdmin ?: false
-                        Log.d(TAG, "User profile fetched successfully: $profile")
                     } else {
-                        Log.d(TAG, "User document does not exist.")
+                        // No doc yet => new user, or user hasn't saved profile
                         _userProfile.value = null
                         _isAdmin.value = false
                     }
@@ -143,76 +143,51 @@ class UserProfileViewModel : ViewModel() {
                     _isAdmin.value = false
                 } finally {
                     _isLoading.value = false
-                    Log.d(TAG, "Loading state set to false.")
                 }
             } else {
-                Log.d(TAG, "No user is signed in.")
                 _userProfile.value = null
                 _isAdmin.value = false
                 _isLoading.value = false
             }
         }
     }
-        /**
-     * Method to initialize user profile in Firestore.
-     */
-    private suspend fun initializeUserProfile(userId: String) {
-        try {
-            val initialData = UserProfile(
-                fullName = "Your Name",
-                email = auth.currentUser?.email ?: "your.email@example.com",
-                phoneNumber = "1234567890"
-                // Other fields remain as default empty strings
-            )
-            firestore.collection("users").document(userId)
-                .set(initialData, SetOptions.merge()).await()
-            _userProfile.value = initialData
-            _eventFlow.emit(UiEvent.ShowToast("User profile initialized. Please complete your details."))
-            Log.d(TAG, "User profile initialized with default data.")
-        } catch (e: Exception) {
-            Log.e(TAG, "Error initializing user profile: ${e.message}", e)
-            _eventFlow.emit(UiEvent.ShowError("Failed to initialize profile: ${e.message}"))
-        }
-    }
 
     /**
-     * Method to upload the profile image to Firebase Storage.
+     * Uploads the user's profile image to Firebase Storage,
+     * then saves the resulting downloadURL to Firestore, and updates local stateFlow.
      */
     fun uploadProfileImage(imageUri: Uri) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-
                 val userId = auth.currentUser?.uid
                     ?: throw Exception("User not authenticated")
 
-                Log.d(TAG, "Uploading profile image for userId: $userId")
-
-                // Generate a unique filename to prevent overwriting
+                // 1) Create a unique path in Storage
                 val fileName = "profile_images/${userId}_${UUID.randomUUID()}.jpg"
-
                 val storageRef = storage.reference.child(fileName)
+
+                // 2) Upload file
                 storageRef.putFile(imageUri).await()
 
-                // Retrieve the download URL of the uploaded image
+                // 3) Get download URL
                 val downloadUrl = storageRef.downloadUrl.await()
 
-                // Update Firestore with the new profile image URL using set() with merge
+                // 4) Save the new image URL to Firestore
                 firestore.collection("users").document(userId)
-                    .set(mapOf("profileImageUrl" to downloadUrl.toString()), SetOptions.merge())
+                    .set(
+                        mapOf("profileImageUrl" to downloadUrl.toString()),
+                        SetOptions.merge()
+                    )
                     .await()
 
-                // Update the UserProfile StateFlow
+                // 5) Update local stateFlow
                 val updatedProfile = _userProfile.value?.copy(profileImageUrl = downloadUrl.toString())
                 _userProfile.value = updatedProfile
 
-                Log.d(TAG, "Profile image uploaded successfully: $downloadUrl")
-
-                // Emit a success event to notify the UI
+                // Show success toast
                 _eventFlow.emit(UiEvent.ShowToast("Profile image uploaded successfully"))
             } catch (e: Exception) {
-                Log.e(TAG, "Error uploading profile image: ${e.message}", e)
-                // Emit an error event to notify the UI
                 _eventFlow.emit(UiEvent.ShowError("Failed to upload profile image: ${e.message}"))
             } finally {
                 _isLoading.value = false
@@ -221,28 +196,27 @@ class UserProfileViewModel : ViewModel() {
     }
 
     /**
-     * Method to upload the resume PDF to Firebase Storage.
+     * Uploads the user's resume to Firebase Storage,
+     * then saves the downloadURL to Firestore, and updates local stateFlow.
      */
     fun uploadResume(resumeUriLocal: Uri, filename: String) {
         viewModelScope.launch {
             try {
                 _isLoading.value = true
-
                 val userId = auth.currentUser?.uid
                     ?: throw Exception("User not authenticated")
 
-                Log.d(TAG, "Uploading resume for userId: $userId")
-
-                // Generate a unique filename to prevent overwriting
+                // 1) Create a unique path
                 val fileName = "resumes/${userId}_${UUID.randomUUID()}_$filename"
-
                 val storageRef = storage.reference.child(fileName)
+
+                // 2) Upload file
                 storageRef.putFile(resumeUriLocal).await()
 
-                // Retrieve the download URL of the uploaded resume
+                // 3) Get download URL
                 val downloadUrl = storageRef.downloadUrl.await()
 
-                // Update Firestore with the new resume URL and filename using set() with merge
+                // 4) Save to Firestore
                 firestore.collection("users").document(userId)
                     .set(
                         mapOf(
@@ -252,20 +226,16 @@ class UserProfileViewModel : ViewModel() {
                         SetOptions.merge()
                     ).await()
 
-                // Update the UserProfile StateFlow
+                // 5) Update local stateFlow
                 val updatedProfile = _userProfile.value?.copy(
                     resumeUrl = downloadUrl.toString(),
                     resumeFilename = filename
                 )
                 _userProfile.value = updatedProfile
 
-                Log.d(TAG, "Resume uploaded successfully: $downloadUrl")
-
-                // Emit a success event to notify the UI
+                // Show success
                 _eventFlow.emit(UiEvent.ShowToast("Resume uploaded successfully"))
             } catch (e: Exception) {
-                Log.e(TAG, "Error uploading resume: ${e.message}", e)
-                // Emit an error event to notify the UI
                 _eventFlow.emit(UiEvent.ShowError("Failed to upload resume: ${e.message}"))
             } finally {
                 _isLoading.value = false
@@ -274,7 +244,8 @@ class UserProfileViewModel : ViewModel() {
     }
 
     /**
-     * Method to update user personal details.
+     * Updates the user’s personal details in local stateFlow.
+     * Actual Firestore save happens when saveUserData() is called.
      */
     fun updateUserDetails(
         fullName: String,
@@ -287,7 +258,6 @@ class UserProfileViewModel : ViewModel() {
         pincode: String,
         district: String
     ) {
-        // Update the UserProfile StateFlow
         val updatedProfile = _userProfile.value?.copy(
             fullName = fullName,
             email = email,
@@ -303,7 +273,8 @@ class UserProfileViewModel : ViewModel() {
     }
 
     /**
-     * Method to update college/university details.
+     * Updates the user’s college details in local stateFlow.
+     * Actual Firestore save happens when saveUserData() is called.
      */
     fun updateCollegeDetails(
         collegeName: String,
@@ -311,7 +282,6 @@ class UserProfileViewModel : ViewModel() {
         course: String,
         passOutYear: String
     ) {
-        // Update the UserProfile StateFlow
         val updatedProfile = _userProfile.value?.copy(
             collegeName = collegeName,
             branch = branch,
@@ -322,7 +292,7 @@ class UserProfileViewModel : ViewModel() {
     }
 
     /**
-     * Method to save all user data to Firestore.
+     * Saves the local userProfile to Firestore using SetOptions.merge().
      */
     fun saveUserData() {
         viewModelScope.launch {
@@ -335,20 +305,14 @@ class UserProfileViewModel : ViewModel() {
                 val userProfile = _userProfile.value
                     ?: throw Exception("User profile data is null")
 
-                Log.d(TAG, "Saving user data for userId: $userId")
-
-                // Save the UserProfile object to Firestore
                 firestore.collection("users").document(userId)
                     .set(userProfile, SetOptions.merge())
                     .await()
 
-                // Emit a success event to notify the UI
+                // Notify UI that we have saved the data
                 _eventFlow.emit(UiEvent.SaveSuccess)
-                Log.d(TAG, "User data saved successfully.")
-
             } catch (e: Exception) {
                 Log.e(TAG, "Error saving user data: ${e.message}", e)
-                // Emit an error event to notify the UI
                 _eventFlow.emit(UiEvent.ShowError("Failed to save profile: ${e.message}"))
             } finally {
                 _isLoading.value = false
@@ -357,25 +321,19 @@ class UserProfileViewModel : ViewModel() {
     }
 
     /**
-     * Method to logout the user.
+     * Logs out the currently signed-in user explicitly.
+     * Emitting UiEvent.LogoutSuccess only here ensures we don't show
+     * "Logout successfully" at app startup when there's no user.
      */
     fun logout() {
         viewModelScope.launch {
             try {
                 auth.signOut()
-                // Emit a logout success event to notify the UI
                 _eventFlow.emit(UiEvent.LogoutSuccess)
-
-                Log.d(TAG, "User logged out successfully.")
             } catch (e: Exception) {
                 Log.e(TAG, "Error logging out: ${e.message}", e)
-                // Emit an error event to notify the UI
                 _eventFlow.emit(UiEvent.ShowError("Failed to logout: ${e.message}"))
             }
         }
-    }
-
-    companion object {
-        private const val TAG = "UserProfileViewModel"
     }
 }

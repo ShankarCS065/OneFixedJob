@@ -1,4 +1,3 @@
-// ProfileCreationScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
 import android.content.Intent
@@ -6,7 +5,6 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import com.devlopershankar.onefixedjob.ui.model.Opportunity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -20,8 +18,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Upload
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
+import androidx.compose.ui.*
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -34,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.devlopershankar.onefixedjob.R
+import com.devlopershankar.onefixedjob.navigation.Screens
 import com.devlopershankar.onefixedjob.ui.viewmodel.UserProfileViewModel
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -42,121 +40,110 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProfileCreationScreen(
     navController: NavController,
-    viewModel: UserProfileViewModel
+    viewModel: UserProfileViewModel,
+    // Decide if it's a new user or an existing user
+    isNewUser: Boolean = false
 ) {
     val context = LocalContext.current
     val coroutineScope = rememberCoroutineScope()
 
     // Collect events from the ViewModel
-    LaunchedEffect(key1 = viewModel) {
+    LaunchedEffect(viewModel) {
         viewModel.eventFlow.collectLatest { event ->
             when (event) {
                 is UserProfileViewModel.UiEvent.ShowToast -> {
-                    // Show toast or Snackbar
-                    // Example using Toast:
-                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
-                }
-                is UserProfileViewModel.UiEvent.SaveSuccess -> {
-                    // Show success message and navigate back or to another screen
-                    android.widget.Toast.makeText(context, "Profile saved successfully!", android.widget.Toast.LENGTH_SHORT).show()
-                    navController.navigateUp()
+                    android.widget.Toast
+                        .makeText(context, event.message, android.widget.Toast.LENGTH_SHORT)
+                        .show()
                 }
                 is UserProfileViewModel.UiEvent.ShowError -> {
-                    // Show error message
-                    android.widget.Toast.makeText(context, event.message, android.widget.Toast.LENGTH_SHORT).show()
+                    android.widget.Toast
+                        .makeText(context, event.message, android.widget.Toast.LENGTH_SHORT)
+                        .show()
+                }
+                is UserProfileViewModel.UiEvent.SaveSuccess -> {
+                    // We'll handle navigation ourselves after "Save" is pressed
                 }
                 is UserProfileViewModel.UiEvent.LogoutSuccess -> {
-                    // Handle logout success if needed
+                    // ...
                 }
             }
         }
     }
 
-    // States for input fields initialized with current ViewModel data
+    // Get the userProfile from state
     val userProfile by viewModel.userProfile.collectAsState()
 
-    // Initialize state variables and update them when userProfile changes
+    // We keep local text fields
     var isInitialized by remember { mutableStateOf(false) }
 
-    var fullName by remember { mutableStateOf(TextFieldValue(userProfile?.fullName ?: "")) }
-    var email by remember { mutableStateOf(TextFieldValue(userProfile?.email ?: "")) }
-    var phoneNumber by remember { mutableStateOf(TextFieldValue(userProfile?.phoneNumber ?: "")) }
-    var dateOfBirth by remember { mutableStateOf(TextFieldValue(userProfile?.dateOfBirth ?: "")) }
-    var gender by remember { mutableStateOf(TextFieldValue(userProfile?.gender ?: "")) }
-    var address by remember { mutableStateOf(TextFieldValue(userProfile?.address ?: "")) }
-    var state by remember { mutableStateOf(TextFieldValue(userProfile?.state ?: "")) }
-    var pincode by remember { mutableStateOf(TextFieldValue(userProfile?.pincode ?: "")) }
-    var district by remember { mutableStateOf(TextFieldValue(userProfile?.district ?: "")) }
+    var fullName by remember { mutableStateOf(TextFieldValue("")) }
+    var email by remember { mutableStateOf(TextFieldValue("")) }
+    var phoneNumber by remember { mutableStateOf(TextFieldValue("")) }
+    var dateOfBirth by remember { mutableStateOf(TextFieldValue("")) }
+    var gender by remember { mutableStateOf(TextFieldValue("")) }
+    var address by remember { mutableStateOf(TextFieldValue("")) }
+    var state by remember { mutableStateOf(TextFieldValue("")) }
+    var pincode by remember { mutableStateOf(TextFieldValue("")) }
+    var district by remember { mutableStateOf(TextFieldValue("")) }
 
-    var collegeName by remember { mutableStateOf(TextFieldValue(userProfile?.collegeName ?: "")) }
-    var branch by remember { mutableStateOf(TextFieldValue(userProfile?.branch ?: "")) }
-    var course by remember { mutableStateOf(TextFieldValue(userProfile?.course ?: "")) }
-    var passOutYear by remember { mutableStateOf(TextFieldValue(userProfile?.passOutYear ?: "")) }
+    var collegeName by remember { mutableStateOf(TextFieldValue("")) }
+    var branch by remember { mutableStateOf(TextFieldValue("")) }
+    var course by remember { mutableStateOf(TextFieldValue("")) }
+    var passOutYear by remember { mutableStateOf(TextFieldValue("")) }
 
-    var resumeFilename by remember { mutableStateOf(TextFieldValue(userProfile?.resumeFilename ?: "")) }
+    var resumeFilename by remember { mutableStateOf(TextFieldValue("")) }
 
-    // Update state variables when userProfile changes (only once)
+    // Initialize the local fields once from userProfile
     LaunchedEffect(userProfile) {
         if (!isInitialized && userProfile != null) {
-            fullName = TextFieldValue(userProfile!!.fullName)
-            email = TextFieldValue(userProfile!!.email)
-            phoneNumber = TextFieldValue(userProfile!!.phoneNumber)
-            dateOfBirth = TextFieldValue(userProfile!!.dateOfBirth)
-            gender = TextFieldValue(userProfile!!.gender)
-            address = TextFieldValue(userProfile!!.address)
-            state = TextFieldValue(userProfile!!.state)
-            pincode = TextFieldValue(userProfile!!.pincode)
-            district = TextFieldValue(userProfile!!.district)
+            userProfile?.let { profile ->
+                fullName = TextFieldValue(profile.fullName)
+                email = TextFieldValue(profile.email)
+                phoneNumber = TextFieldValue(profile.phoneNumber)
+                dateOfBirth = TextFieldValue(profile.dateOfBirth)
+                gender = TextFieldValue(profile.gender)
+                address = TextFieldValue(profile.address)
+                state = TextFieldValue(profile.state)
+                pincode = TextFieldValue(profile.pincode)
+                district = TextFieldValue(profile.district)
 
-            collegeName = TextFieldValue(userProfile!!.collegeName)
-            branch = TextFieldValue(userProfile!!.branch)
-            course = TextFieldValue(userProfile!!.course)
-            passOutYear = TextFieldValue(userProfile!!.passOutYear)
+                collegeName = TextFieldValue(profile.collegeName)
+                branch = TextFieldValue(profile.branch)
+                course = TextFieldValue(profile.course)
+                passOutYear = TextFieldValue(profile.passOutYear)
 
-            resumeFilename = TextFieldValue(userProfile!!.resumeFilename)
-
+                resumeFilename = TextFieldValue(profile.resumeFilename ?: "")
+            }
             isInitialized = true
         }
     }
 
-    // Launcher for image selection
-    val imageLauncher = rememberLauncherForActivityResult(
+    // We'll get the image/resume from the user
+    val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // Upload the selected image via ViewModel
-            viewModel.uploadProfileImage(
-                imageUri = it
-            )
+            viewModel.uploadProfileImage(it)
         }
     }
-
-    // Launcher for PDF selection
-    val pdfLauncher = rememberLauncherForActivityResult(
+    val pdfPicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
         uri?.let {
-            // Extract filename
             val filename = getFileNameFromUri(context, it)
             resumeFilename = TextFieldValue(filename)
-            // Upload the selected resume via ViewModel
-            viewModel.uploadResume(
-                resumeUriLocal = it,
-                filename = filename
-            )
+            viewModel.uploadResume(it, filename)
         }
     }
 
-    // Collect isLoading state as State
+    // Observe isLoading
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Collect resumeUri state as State
+    // Display the image/resume
+    val profileImageUri = userProfile?.profileImageUrl ?: ""
     val resumeUri = userProfile?.resumeUrl ?: ""
 
-    // Collect profileImageUri state as State
-    val profileImageUri = userProfile?.profileImageUrl ?: ""
-
-    // Loading Indicator
     if (isLoading) {
         Box(
             modifier = Modifier
@@ -171,36 +158,25 @@ fun ProfileCreationScreen(
     Scaffold(
         topBar = {
             SmallTopAppBar(
-                title = { Text(text = "Create Profile", color = Color.Black) },
+                title = { Text("Create Profile", color = Color.Black) },
                 navigationIcon = {
                     IconButton(onClick = { navController.navigateUp() }) {
-                        Icon(
-                            imageVector = Icons.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = Color.Black
-                        )
+                        Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = Color.Black)
                     }
                 },
-                colors = TopAppBarDefaults.smallTopAppBarColors(
-                    containerColor = Color.White,
-                    titleContentColor = Color.Black,
-                    navigationIconContentColor = Color.Black
-                ),
-                modifier = Modifier.height(56.dp)
+                colors = TopAppBarDefaults.smallTopAppBarColors(containerColor = Color.White)
             )
-        },
-        containerColor = Color.White,
-        contentColor = Color.Black
-    ) { innerPadding ->
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding)
+                .padding(paddingValues)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Profile Image Selection
+            // Profile Image
             Box(
                 modifier = Modifier
                     .size(120.dp)
@@ -208,24 +184,23 @@ fun ProfileCreationScreen(
                     .background(Color.LightGray)
                     .clickable {
                         // Launch the image picker
-                        imageLauncher.launch("image/*")
+                        imagePicker.launch("image/*")
                     },
                 contentAlignment = Alignment.Center
             ) {
                 if (profileImageUri.isNotEmpty()) {
                     AsyncImage(
                         model = profileImageUri,
-                        contentDescription = "Selected Profile Image",
+                        contentDescription = "Profile Image",
                         modifier = Modifier.fillMaxSize(),
                         contentScale = ContentScale.Crop,
                         placeholder = painterResource(id = R.drawable.ic_user_placeholder),
                         error = painterResource(id = R.drawable.ic_user_placeholder)
                     )
                 } else {
-                    // Placeholder Icon
                     Icon(
                         painter = painterResource(id = R.drawable.ic_user_placeholder),
-                        contentDescription = "Profile Placeholder",
+                        contentDescription = "Placeholder",
                         tint = Color.Gray,
                         modifier = Modifier.size(64.dp)
                     )
@@ -233,7 +208,7 @@ fun ProfileCreationScreen(
             }
             Spacer(modifier = Modifier.height(16.dp))
 
-            // User Details Inputs
+            // Personal Details
             Text(
                 text = "Personal Details",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
@@ -244,10 +219,7 @@ fun ProfileCreationScreen(
                 value = fullName,
                 onValueChange = { fullName = it },
                 label = { Text("Full Name") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -256,9 +228,7 @@ fun ProfileCreationScreen(
                 onValueChange = { email = it },
                 label = { Text("Email") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Email
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email)
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -267,9 +237,7 @@ fun ProfileCreationScreen(
                 onValueChange = { phoneNumber = it },
                 label = { Text("Phone Number") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Phone
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text)
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -278,10 +246,8 @@ fun ProfileCreationScreen(
                 onValueChange = { dateOfBirth = it },
                 label = { Text("Date of Birth") },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "DD/MM/YYYY") },
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                )
+                placeholder = { Text("DD/MM/YYYY") },
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone)
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -289,10 +255,7 @@ fun ProfileCreationScreen(
                 value = gender,
                 onValueChange = { gender = it },
                 label = { Text("Gender") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -300,10 +263,7 @@ fun ProfileCreationScreen(
                 value = address,
                 onValueChange = { address = it },
                 label = { Text("Address") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -311,10 +271,7 @@ fun ProfileCreationScreen(
                 value = state,
                 onValueChange = { state = it },
                 label = { Text("State") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -323,9 +280,7 @@ fun ProfileCreationScreen(
                 onValueChange = { pincode = it },
                 label = { Text("Pincode") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -333,14 +288,11 @@ fun ProfileCreationScreen(
                 value = district,
                 onValueChange = { district = it },
                 label = { Text("District") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            // College Details Inputs
+            // College Details
             Text(
                 text = "College/University Details",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
@@ -351,10 +303,7 @@ fun ProfileCreationScreen(
                 value = collegeName,
                 onValueChange = { collegeName = it },
                 label = { Text("College/University") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -362,10 +311,7 @@ fun ProfileCreationScreen(
                 value = branch,
                 onValueChange = { branch = it },
                 label = { Text("Branch") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -373,10 +319,7 @@ fun ProfileCreationScreen(
                 value = course,
                 onValueChange = { course = it },
                 label = { Text("Course/Degree") },
-                modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Text
-                )
+                modifier = Modifier.fillMaxWidth()
             )
             Spacer(modifier = Modifier.height(8.dp))
 
@@ -385,25 +328,20 @@ fun ProfileCreationScreen(
                 onValueChange = { passOutYear = it },
                 label = { Text("Pass-out Year") },
                 modifier = Modifier.fillMaxWidth(),
-                keyboardOptions = KeyboardOptions(
-                    keyboardType = KeyboardType.Number
-                )
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
             )
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Resume Details Inputs
+            // Resume
             Text(
                 text = "Resume Details",
                 style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.Bold)
             )
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Update Resume Button
+            // Upload Resume Button
             Button(
-                onClick = {
-                    // Launch the PDF picker
-                    pdfLauncher.launch("application/pdf")
-                },
+                onClick = { pdfPicker.launch("application/pdf") },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(40.dp),
@@ -425,10 +363,10 @@ fun ProfileCreationScreen(
             }
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Resume Filename Display (Read-only)
+            // Read-only text for resume filename
             OutlinedTextField(
                 value = resumeFilename,
-                onValueChange = { /* Read-only */ },
+                onValueChange = { /* do nothing, read-only */ },
                 label = { Text("Resume Filename") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -436,8 +374,7 @@ fun ProfileCreationScreen(
                         if (resumeUri.isNotEmpty()) {
                             val uri = Uri.parse(resumeUri)
                             val intent = Intent(Intent.ACTION_VIEW, uri)
-                            intent.flags =
-                                Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
+                            intent.flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
                             try {
                                 context.startActivity(intent)
                             } catch (e: Exception) {
@@ -455,32 +392,7 @@ fun ProfileCreationScreen(
                             ).show()
                         }
                     },
-                readOnly = true,
-                trailingIcon = {
-                    if (resumeUri.isNotEmpty()) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_pdf_placeholder),
-                            contentDescription = "View Resume",
-                            modifier = Modifier
-                                .size(24.dp)
-                                .clickable {
-                                    val uri = Uri.parse(resumeUri)
-                                    val intent = Intent(Intent.ACTION_VIEW, uri)
-                                    intent.flags =
-                                        Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION
-                                    try {
-                                        context.startActivity(intent)
-                                    } catch (e: Exception) {
-                                        android.widget.Toast.makeText(
-                                            context,
-                                            "No PDF viewer found",
-                                            android.widget.Toast.LENGTH_SHORT
-                                        ).show()
-                                    }
-                                }
-                        )
-                    }
-                }
+                readOnly = true
             )
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -488,7 +400,7 @@ fun ProfileCreationScreen(
             Button(
                 onClick = {
                     coroutineScope.launch {
-                        // Update ViewModel with new data
+                        // 1) Update local data in ViewModel
                         viewModel.updateUserDetails(
                             fullName = fullName.text,
                             email = email.text,
@@ -506,10 +418,21 @@ fun ProfileCreationScreen(
                             course = course.text,
                             passOutYear = passOutYear.text
                         )
-                        // Resume details are already updated via the launcher
 
-                        // Save data to Firestore
+                        // 2) Save to Firestore
                         viewModel.saveUserData()
+
+                        // 3) If it's a new user, go to Login,
+                        //    otherwise go back to UserProfile
+                        if (isNewUser) {
+                            navController.navigate(Screens.LoginScreen) {
+                                popUpTo(Screens.ProfileCreationScreen) { inclusive = true }
+                            }
+                        } else {
+                            navController.navigate(Screens.UserProfileScreen) {
+                                popUpTo(Screens.ProfileCreationScreen) { inclusive = true }
+                            }
+                        }
                     }
                 },
                 modifier = Modifier
@@ -517,14 +440,14 @@ fun ProfileCreationScreen(
                     .height(50.dp),
                 shape = RoundedCornerShape(30.dp)
             ) {
-                Text(text = "Save")
+                Text("Save")
             }
         }
     }
 }
 
 /**
- * Helper function to get the filename from URI.
+ * Helper function to get the filename from URI
  */
 private fun getFileNameFromUri(context: android.content.Context, uri: Uri): String {
     val cursor = context.contentResolver.query(uri, null, null, null, null)

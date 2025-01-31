@@ -124,8 +124,20 @@ class MainActivity : ComponentActivity() {
                             composable(Screens.UserProfileScreen) {
                                 UserProfileScreen(navController, userProfileViewModel)
                             }
-                            composable(Screens.ProfileCreationScreen) {
-                                ProfileCreationScreen(navController, userProfileViewModel)
+//                            composable(Screens.ProfileCreationScreen) {
+//                                ProfileCreationScreen(navController, userProfileViewModel)
+//                            }
+
+                            composable(
+                                route = Screens.ProfileCreationScreen + "/{isEdit}",
+                                arguments = listOf(navArgument("isEdit") { defaultValue = "false" })
+                            ) { backStackEntry ->
+                                val isNewUser = backStackEntry.arguments?.getString("isEdit") == "true"
+                                ProfileCreationScreen(
+                                    navController,
+                                    userProfileViewModel,
+                                    isNewUser
+                                )
                             }
 
                             // Admin Screen

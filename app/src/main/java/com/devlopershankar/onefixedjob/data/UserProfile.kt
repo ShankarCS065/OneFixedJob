@@ -1,8 +1,9 @@
-// UserProfile.kt
 package com.devlopershankar.onefixedjob.data
 
-import com.google.firebase.Timestamp
-
+/**
+ * Data class mapping the user's profile.
+ * Firestore will map these fields from/to the "users/{uid}" document.
+ */
 data class UserProfile(
     val fullName: String = "",
     val email: String = "",
@@ -17,7 +18,10 @@ data class UserProfile(
     val branch: String = "",
     val course: String = "",
     val passOutYear: String = "",
-    val profileImageUrl: String = "",
-    val resumeUrl: String = "",
-    val resumeFilename: String = "",
+    val profileImageUrl: String? = null,
+    val resumeUrl: String? = null,
+    val resumeFilename: String? = null,
+
+    // The 'isAdmin' field:
+    val isAdmin: Boolean = false
 )

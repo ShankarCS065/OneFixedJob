@@ -1,4 +1,3 @@
-// UserProfileScreen.kt
 package com.devlopershankar.onefixedjob.ui.screen
 
 import android.app.DownloadManager
@@ -10,21 +9,14 @@ import android.provider.OpenableColumns
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Download
-import androidx.compose.material.icons.filled.Upload
-import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import coil.compose.AsyncImage
 import com.devlopershankar.onefixedjob.R
+import com.devlopershankar.onefixedjob.data.UserProfile
 import com.devlopershankar.onefixedjob.navigation.Screens
 import com.devlopershankar.onefixedjob.ui.viewmodel.UserProfileViewModel
 import kotlinx.coroutines.flow.collectLatest
@@ -51,6 +44,8 @@ fun UserProfileScreen(
     viewModel: UserProfileViewModel
 ) {
     val context = LocalContext.current
+
+    // Coroutines scope for background operations
     val coroutineScope = rememberCoroutineScope()
 
     // Collect events from the ViewModel
@@ -77,8 +72,11 @@ fun UserProfileScreen(
     // Collecting isLoading state
     val isLoading by viewModel.isLoading.collectAsState()
 
-    // Collecting UserProfile StateFlow
+    // Collecting UserProfile StateFlow (can be null)
     val userProfile by viewModel.userProfile.collectAsState()
+
+    // If userProfile is null, use a default/empty UserProfile to show placeholders
+    val currentProfile = userProfile ?: UserProfile()
 
     // Launcher for image selection
     val imageLauncher = rememberLauncherForActivityResult(
@@ -86,9 +84,7 @@ fun UserProfileScreen(
     ) { uri: Uri? ->
         uri?.let {
             // Upload the selected image via ViewModel
-            viewModel.uploadProfileImage(
-                imageUri = it
-            )
+            viewModel.uploadProfileImage(imageUri = it)
         }
     }
 
@@ -107,7 +103,7 @@ fun UserProfileScreen(
         }
     }
 
-    // Loading Indicator
+    // Loading Indicator overlay
     if (isLoading) {
         Box(
             modifier = Modifier
@@ -135,14 +131,14 @@ fun UserProfileScreen(
                 actions = {
                     Button(
                         onClick = {
-                            navController.navigate(Screens.ProfileCreationScreen)
+
+                            navController.navigate(Screens.ProfileCreationScreen + "/true")
                         },
                         colors = ButtonDefaults.buttonColors(
                             containerColor = Color.Transparent,
                             contentColor = Color.Black
                         ),
                         border = null,
-                        shape = RoundedCornerShape(20.dp),
                         contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
                         modifier = Modifier.height(36.dp)
                     ) {
@@ -170,72 +166,62 @@ fun UserProfileScreen(
         containerColor = Color.White,
         contentColor = Color.Black
     ) { innerPadding ->
-        userProfile?.let { profile ->
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-                    .background(Color.White)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Profile Image Card
-                item {
-                    UserImageCard(
-                        profileImageUri = profile.profileImageUrl,
-                        onEditClick = {
-                            // Trigger image picker
-                            imageLauncher.launch("image/*")
-                        }
-                    )
-                }
 
-                // User Details Card
-                item {
-                    UserDetailsCard(
-                        fullName = profile.fullName,
-                        email = profile.email,
-                        phoneNumber = profile.phoneNumber,
-                        dateOfBirth = profile.dateOfBirth,
-                        gender = profile.gender,
-                        address = profile.address,
-                        state = profile.state,
-                        pincode = profile.pincode,
-                        district = profile.district
-                    )
-                }
-
-                // College/University Details Card
-                item {
-                    CollegeDetailsCard(
-                        collegeName = profile.collegeName,
-                        branch = profile.branch,
-                        course = profile.course,
-                        passOutYear = profile.passOutYear
-                    )
-                }
-
-                // Resume Card
-                item {
-                    ResumeCard(
-                        resumeUri = profile.resumeUrl ?: "",
-                        resumeFilename = profile.resumeFilename ?: "",
-                        onUploadClick = {
-                            // Trigger resume picker
-                            resumePickerLauncher.launch("application/pdf")
-                        }
-                    )
-                }
+        // Main content
+        LazyColumn(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(innerPadding)
+                .background(Color.White)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Profile Image Card
+            item {
+                UserImageCard(
+                    profileImageUri = currentProfile.profileImageUrl,
+                    onEditClick = {
+                        // Trigger image picker
+                        imageLauncher.launch("image/*")
+                    }
+                )
             }
-        } ?: run {
-            // If userProfile is null, show a message or initiate fetching
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding),
-                contentAlignment = Alignment.Center
-            ) {
-                Text("Loading profile...", style = MaterialTheme.typography.bodyLarge)
+
+            // User Details Card
+            item {
+                UserDetailsCard(
+                    fullName = currentProfile.fullName,
+                    email = currentProfile.email,
+                    phoneNumber = currentProfile.phoneNumber,
+                    dateOfBirth = currentProfile.dateOfBirth,
+                    gender = currentProfile.gender,
+                    address = currentProfile.address,
+                    state = currentProfile.state,
+                    pincode = currentProfile.pincode,
+                    district = currentProfile.district
+                )
+            }
+
+            // College/University Details Card
+            item {
+                CollegeDetailsCard(
+                    collegeName = currentProfile.collegeName,
+                    branch = currentProfile.branch,
+                    course = currentProfile.course,
+                    passOutYear = currentProfile.passOutYear
+                )
+            }
+
+            // Resume Card
+            item {
+                ResumeCard(
+                    resumeUri = currentProfile.resumeUrl ?: "",
+                    resumeFilename = currentProfile.resumeFilename ?: "",
+                    onUploadClick = {
+                        // Trigger resume picker
+                        resumePickerLauncher.launch("application/pdf")
+                    }
+                )
             }
         }
     }
@@ -254,30 +240,25 @@ fun UserImageCard(profileImageUri: String?, onEditClick: () -> Unit) {
     ) {
         Card(
             colors = CardDefaults.cardColors(containerColor = Color.LightGray),
-            shape = CircleShape,
+            shape = MaterialTheme.shapes.large,
             elevation = CardDefaults.cardElevation(defaultElevation = 8.dp),
-            modifier = Modifier
-                .size(120.dp)
+            modifier = Modifier.size(120.dp)
         ) {
             if (!profileImageUri.isNullOrEmpty()) {
                 AsyncImage(
                     model = profileImageUri,
                     contentDescription = "User Image",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop,
                     placeholder = painterResource(id = R.drawable.ic_user_placeholder),
                     error = painterResource(id = R.drawable.ic_user_placeholder)
                 )
             } else {
-                // Placeholder Image
+                // Show placeholder image if no profile image
                 Image(
                     painter = painterResource(id = R.drawable.ic_user_placeholder),
                     contentDescription = "User Placeholder",
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .clip(CircleShape),
+                    modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Crop
                 )
             }
@@ -289,7 +270,7 @@ fun UserImageCard(profileImageUri: String?, onEditClick: () -> Unit) {
             modifier = Modifier
                 .align(Alignment.BottomEnd)
                 .offset(x = (-10).dp, y = 10.dp)
-                .background(Color.White, shape = CircleShape)
+                .background(Color.White, shape = MaterialTheme.shapes.small)
         ) {
             Icon(
                 imageVector = Icons.Filled.Edit,
@@ -317,7 +298,7 @@ fun UserDetailsCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.LightGray),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -383,7 +364,7 @@ fun CollegeDetailsCard(
 ) {
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.LightGray),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -418,7 +399,7 @@ fun ResumeCard(
 
     Card(
         colors = CardDefaults.cardColors(containerColor = Color.LightGray),
-        shape = RoundedCornerShape(12.dp),
+        shape = MaterialTheme.shapes.medium,
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
